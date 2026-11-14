@@ -1,7 +1,9 @@
+
 # Secrets
 .env
 *.env
 backend/.env
+!.env.example
 
 # Python
 .venv/
@@ -30,4 +32,3 @@ data/historical/raw/
 data/historical/processed/historical_observations_normalized.csv
 data/historical/processed/viirs_snpp_sp_historical.csv
 data/historical/processed/analytics/daily_cell_activity.csv
-
