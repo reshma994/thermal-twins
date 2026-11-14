@@ -1,0 +1,32 @@
+# Secrets
+.env
+*.env
+backend/.env
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Databases
+*.db
+*.sqlite3
+
+# Frontend
+node_modules/
+.next/
+dist/
+build/
+
+# OS
+.DS_Store
+
+# Historical raw downloads
+data/historical/raw/
+
+# Large historical datasets
+data/historical/processed/historical_observations_normalized.csv
+data/historical/processed/viirs_snpp_sp_historical.csv
+data/historical/processed/analytics/daily_cell_activity.csv
