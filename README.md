@@ -1,6 +1,6 @@
 # Thermal Twins
 
-**One consistent fire record from two generations of satellites.** Sensor-aware harmonization of MODIS and VIIRS active-fire hotspots (NASA FIRMS) into a burning activity calendar for India, Nov 2000 → 14 Nov 2026, served as a fully static web app.
+**One consistent fire record from two generations of satellites.** Sensor-aware harmonization of MODIS and VIIRS active-fire hotspots (NASA FIRMS) into a burning activity calendar for **India and Argentina**, Nov 2000 → Nov 2026, served as a fully static web app. The record is 25 million real FIRMS detections; no synthetic or mock data is used anywhere.
 
 *NASA Space Apps Challenge 2026: Harmonization of MODIS and VIIRS Hot Spots.*
 
@@ -69,6 +69,46 @@ For each H3 r5 cell (≈ 252 km²), month and day/night:
 - After calibration, held-out years sit at 0.98–1.10 (actual ÷ predicted) nationally.
 - Clipping the API data to the country footprint drops 1.26% of genuine detections, measured on 2025 as a holdout.
 
+## Results by region (held-out 2017–2020 unless noted)
+
+| | India | Argentina |
+|---|---|---|
+| FIRMS detections harmonized | 18.0 M | 7.05 M |
+| Aqua, cell-month pseudo-R²: DPT vs equal-area cells | **0.79** vs 0.50 | **0.69** vs 0.05 |
+| Terra, cell-month pseudo-R²: DPT vs equal-area cells | **0.51** vs −0.19 | **0.53** vs −0.57 |
+| National monthly error (WAPE), Aqua: DPT vs best simple baseline | **21.8%** vs 22.5% | 15.7% vs **12.3%** (baseline better) |
+| National monthly error (WAPE), Terra: DPT vs best simple baseline | **18.2%** vs 29.6% | **14.3%** vs 23.8% |
+| MODIS 50% detection power (collocated, day / night) | ~70 / 30 MW¹ | 25 / 17 MW |
+| Aqua overpass drift (mean daytime local solar time) | 13:20 → 15:06 | 13:54 → 15:47 |
+| Data-driven splice to VIIRS-derived values | 2021 | 2022 |
+
+¹ India's day curve has no clear plateau, so the logistic fit hits its upper bound; read it as "above ~30 MW".
+
+## Uncertainty you can check
+
+Every VIIRS-derived month carries a 90% band. Its variance has three parts: detection noise, overdispersion and proportional model error. The bands are calibrated by **split-conformal prediction** on out-of-sample years 2017–2018, then tested on held-out 2019–2020 against the MODIS counts actually observed.
+
+| Area size | India: coverage · median half-width | Argentina: coverage · median half-width |
+|---|---|---|
+| 1 cell (253 km²) | 89.5% · ±68% | 90.5% · ±353% (too wide to be useful) |
+| ~1,800 km² | 88.6% · ±63% | 92.3% · ±129% |
+| ~12,400 km² | 87.2% · ±74% | 91.7% · ±56% |
+| ~87,000 km² | 87.4% · ±86% | 91.1% · ±48% |
+| National | 91.7% · ±58% | **75.0%** · ±21% (24 test months; fails, see below) |
+
+Two rules in the app follow from this table:
+- Where a scale failed its held-out check, the app uses the next smaller scale that passed, which gives wider and honest bands.
+- Where the typical band is wider than ±100%, it shows a "small area" warning.
+
+## Known limitations
+
+- **Monthly MODIS-level counts are noisy.** Even with a correct model, a single month in a small area can only be reconstructed within roughly ±60–130%. Seasonal patterns, rankings and anomalies are robust; individual small-area months are not.
+- **Argentina, national scale:** the 90% band covered only 75% of the held-out national months. 2019–2020 were exceptional fire years (Paraná Delta, Córdoba), and 24 months is too few to calibrate a national band. Also, a simple day/night-scaled cell count is slightly better for the national Argentine total (12.3% vs 15.7%). The DPT's advantage is local, at the cell and regional scale.
+- **Polar orbiters only see two moments a day.** If burning moves outside the overpass windows, every polar-orbit record understates it, harmonized or not. The app's observation-time alert flags this but cannot fill it in. Geostationary data (GOES, Himawari, GK-2A, INSAT-3D) is the next step.
+- **No morning VIIRS.** After Terra ends, the morning share is modelled from the 2003–2019 Terra/Aqua relationship.
+- **Pre-July 2002:** the Aqua share is gap-filled from Terra with a region × calendar-month ratio.
+- **Country clipping:** API rows are clipped to each country's FIRMS footprint, which drops about 1.3% of genuine detections (measured on 2025).
+
 ## A finding the harmonization exposed (Punjab & Haryana, 1–14 Nov)
 
 | Year | VIIRS NOAA-20 units (13:30) | Aqua MODIS units (drifting later) | Aqua ÷ VIIRS |
@@ -92,10 +132,13 @@ pipeline/            Python data pipeline (one module per stage; python -m pipel
   clean.py · grid.py normalize, H3 cells per overpass, static-source mask, country clip
   dpt.py             Detection-Physics Transfer: fit + held-out validation
   harmonize.py       MODIS-equivalent series, orbit-drift diagnostic, data-driven splice
+  coverage.py        split-conformal calibration and held-out test of the 90% bands
   export.py          compact static bundle for the web app (4.7 MB gz)
   hotspots.py        raw-hotspot packs for CSV download
   figures.py         slide figures
 web/                 static web app (Vite + TypeScript, MapLibre, ECharts, h3-js)
+tests/e2e.py         real-browser end-to-end checks (Playwright + Edge)
+tests/record_demo.py captioned 30 s screen recording of the app
 docs/                demo deck, figures, screenshots
 data/processed/      model parameters, drift table, national series (small, versioned)
 ```
@@ -120,6 +163,7 @@ Import this repository in Vercel and keep the defaults; `vercel.json` already se
 python -m venv .venv && .venv/Scripts/pip install -r requirements.txt
 cp .env.example .env                       # free FIRMS MAP_KEY (only needed for the current-year top-up)
 .venv/Scripts/python -m pipeline.run --aoi india
+.venv/Scripts/python -m pipeline.run --aoi argentina
 ```
 
 Stages can be run on their own (`python -m pipeline.<stage> --aoi india`) or resumed with `--from <stage>`.

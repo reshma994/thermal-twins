@@ -204,8 +204,8 @@ def fig_validation(models: dict) -> dict:
 
 
 def fig_drift(meta: dict, last_date: pd.Timestamp) -> dict:
-    pj = pd.DataFrame(meta["drift"]["punjab_haryana"]).set_index("year").loc[2013:]
-    ind = pd.DataFrame(meta["drift"]["india"]).set_index("year").loc[2013:]
+    pj = pd.DataFrame(meta["drift"]["focus"]).set_index("year").loc[2013:]
+    ind = pd.DataFrame(meta["drift"]["national"]).set_index("year").loc[2013:]
     env, spl = float(meta["envelope"]), int(meta["splice_year"])
     last = int(pj.index.max())
     partial = last == last_date.year and (last_date.month, last_date.day) != (12, 31)

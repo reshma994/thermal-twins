@@ -60,7 +60,7 @@ f.patch.set_facecolor("#0b0c10")
 f.text(0.06, 0.66, "Thermal Twins", fontsize=64, color="#ffffff", weight="bold")
 f.text(0.06, 0.585, "One consistent fire record from two generations of satellites", fontsize=26, color="#ffd166")
 f.text(0.06, 0.475, "Sensor-aware harmonization of MODIS and VIIRS active-fire hot spots (NASA FIRMS)\n"
-       "into a burning activity calendar — India, Nov 2000 → 14 Nov 2026, any area you draw.",
+       "into a burning activity calendar — India & Argentina, Nov 2000 → Nov 2026, any area you draw.",
        fontsize=17, color="#c9ccd6", linespacing=1.6)
 f.text(0.06, 0.30, "NASA Space Apps Challenge 2026 · Harmonization of MODIS and VIIRS Hot Spots", fontsize=15, color="#9aa0b0")
 f.text(0.06, 0.24, f"Live app: {APP_URL}", fontsize=17, color="#ff8a3d", weight="bold")
@@ -99,15 +99,15 @@ slides.append(f)
 # 4 -- validation
 f = slide("Validated on years the model never saw (2017–2020)", "Validity")
 image(f, FIG / "fig_validation.png", [0.02, 0.05, 0.64, 0.75])
-card(f, 0.68, 0.58, 0.29, 0.18, "0.79 vs 0.50", "share of cell-month variability explained\n(Aqua) — ours vs equal-area cells")
-card(f, 0.68, 0.36, 0.29, 0.18, "0.51 vs −0.19", "Terra morning orbit: naive scaling is worse\nthan predicting the average; DPT is not")
-card(f, 0.68, 0.14, 0.29, 0.18, "±10%", "held-out national years vs observed MODIS\n(0.98–1.10 after calibration)")
+card(f, 0.68, 0.58, 0.29, 0.18, "0.79 · 0.69", "cell-month skill, India · Argentina (Aqua)\nvs 0.50 · 0.05 for equal-area cells")
+card(f, 0.68, 0.36, 0.29, 0.18, "0.51 · 0.53", "Terra morning orbit (naive scaling: −0.19 · −0.57,\nworse than predicting the average)")
+card(f, 0.68, 0.14, 0.29, 0.18, "87–92%", "held-out coverage of our 90% bands\n(split-conformal; limits stated in README)")
 slides.append(f)
 
 # 5 -- the app
 f = slide("A burning calendar for any area — no server, opens anywhere", "The app")
 image(f, SHOT / "app_top.png", [0.02, 0.05, 0.60, 0.74])
-bullets(f, ["Draw a box / polygon, pick a preset,\nor enter lat-lon + radius",
+bullets(f, ["India & Argentina; draw a box or polygon,\npick a preset, or click any hexagon",
             "Calendar 2000→today: activity,\nvs-median or percentile colours",
             "Situation brief: this month vs the\nsame days in past years, critical months",
             "Season-to-date envelope, trends,\nnaive-vs-harmonized toggle",
@@ -132,10 +132,11 @@ slides.append(f)
 
 # 7 -- impact
 f = slide("Impact and what's next", "Why it matters")
-bullets(f, ["Emergency & air-quality managers: 'Is this month unusual?' answered on a\nconsistent 26-year baseline, with uncertainty — not a sensor artifact.",
+bullets(f, ["Two countries live: India (ISRO partner region) and Argentina, where CONAE already\nruns a MODIS/VIIRS hotspot viewer. Any FIRMS country is one command away.",
+            "Emergency & air-quality managers: 'Is this month unusual?' answered on a\nconsistent 26-year baseline, with uncertainty — not a sensor artifact.",
             "Scientists & land managers: trends that survive the MODIS → VIIRS hand-over\n(MODIS ends 2026–27; Suomi NPP ended 2 Nov 2026).",
-            "Region-agnostic pipeline: any FIRMS country in one command; static app costs\nnothing to host and keeps working through mission transitions.",
-            "Next: geostationary diurnal correction (GOES / Himawari / GK-2A / INSAT-3D),\nLandsat 30 m validation, morning-orbit gap after Terra."], 0.05, 0.70, size=17, gap=0.135)
+            "Honest by design: where the method is weaker (small areas, Argentina's national\ntotal) the app and README say so, and the uncertainty band widens.",
+            "Next: geostationary diurnal correction (GOES / Himawari / GK-2A / INSAT-3D),\nLandsat 30 m validation, morning-orbit gap after Terra."], 0.05, 0.72, size=16, gap=0.115)
 f.text(0.05, 0.13, f"Live app: {APP_URL}     ·     Code & data: {REPO_URL}", fontsize=15, color=ACC, weight="bold")
 f.text(0.05, 0.085, "Data: NASA FIRMS MODIS C6.1 & VIIRS 375 m (S-NPP, NOAA-20, NOAA-21). An AI coding assistant helped draft code; the team reviewed all content.",
        fontsize=11.5, color=MUTED)

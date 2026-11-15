@@ -10,7 +10,7 @@
  "aqua_first_ym": 24030,
  "viirs_first_ym": 24144,
  "drift": {
-  "india": [
+  "national": [
    {
     "year": 2012,
     "aqua_ratio": 1.158,
@@ -132,7 +132,7 @@
     "aqua_lst": 15.100000381469727
    }
   ],
-  "punjab_haryana": [
+  "focus": [
    {
     "year": 2012,
     "aqua_ratio": 1.082,
@@ -254,5 +254,12 @@
     "aqua_lst": 15.100000381469727
    }
   ]
- }
+ },
+ "drift_focus_name": "Punjab & Haryana",
+ "bbox": [
+  68.0,
+  6.5,
+  97.5,
+  37.5
+ ]
 }

@@ -117,7 +117,7 @@ export class FireMap {
     }
   }
 
-  fitIndia() { this.map.fitBounds([[67.5, 6.5], [97.8, 37.3]], { padding: 20, duration: 600 }); }
+  fitAll(b: [number, number, number, number] = [67.5, 6.5, 97.8, 37.3]) { this.map.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: 20, duration: 600 }); }
 
   setMode(m: "none" | "rect" | "poly") {
     this.mode = m; this.start = null; this.pts = [];

@@ -6,6 +6,8 @@ export interface Meta {
   modis_first_ym: number; presets: Preset[]; src_codes: Record<string, string>;
   drift: Record<string, Array<Record<string, number>>>;
   validation: Record<string, Record<string, any>>;
+  drift_focus_name?: string; bbox?: [number, number, number, number]; n_detections?: number;
+  coverage?: { method: string; scales: Array<{ scale: string; cells: number; a: number; b2: number; k: number; coverage_test: number; median_rel_halfwidth_ge20: number }> } | null;
   collocated: Record<string, { frp_mid: number[]; p_detect: number[]; ci_lo: number[]; ci_hi: number[]; n: number[]; fit: { pmax: number; frp50_mw: number; slope: number } }>;
 }
 
@@ -60,7 +62,20 @@ export function srcOf(ds: Dataset, m: number): number {
   return 0;
 }
 
-export function aggregate(ds: Dataset, mask: Uint8Array): Series {
+/** Calibrated 90% band parameters for an area of `nCells` H3 r5 cells: nearest scale in log-size; if that
+ *  scale failed its held-out check (< 85% coverage), fall back to the nearest smaller scale that passed. */
+export function bandParams(ds: Dataset, nCells: number) {
+  const sc = [...(ds.meta.coverage?.scales ?? [])].sort((x, y) => x.cells - y.cells);
+  if (!sc.length) return { a: 0, b2: 0, k: 1, halfWidth: NaN, scale: "", reliable: true };
+  const n = Math.max(nCells, 1);
+  let i = 0;
+  sc.forEach((x, j) => { if (Math.abs(Math.log(x.cells) - Math.log(n)) < Math.abs(Math.log(sc[i].cells) - Math.log(n))) i = j; });
+  while (i > 0 && sc[i].coverage_test < 0.85) i--;
+  const b = sc[i];
+  return { a: b.a, b2: b.b2, k: b.k, halfWidth: b.median_rel_halfwidth_ge20, scale: b.scale, reliable: b.median_rel_halfwidth_ge20 <= 1.0 };
+}
+
+export function aggregate(ds: Dataset, mask: Uint8Array, nCells = 1): Series {
   const nM = ds.nM, c = ds.col, n = ds.meta.n;
   const z = () => new Float64Array(nM);
   const s: Series = {
@@ -79,12 +94,15 @@ export function aggregate(ds: Dataset, mask: Uint8Array): Series {
     s.lo[m] += c.lo[i] / 10; s.hi[m] += c.hi[i] / 10; s.vr[m] += c.var[i] / 10;
     s.mu[m] += c.mu[i]; s.mp[m] += c.mp[i]; s.vu[m] += c.vu[i]; s.vp[m] += c.vp[i]; s.vmeq[m] += c.vmeq[i] / 10;
   }
-  const Z = 1.645;
+  const Z = 1.645, bp = bandParams(ds, nCells);
   for (let m = 0; m < nM; m++) {
     const src = srcOf(ds, m);
     s.src[m] = src;
     const sd = Math.sqrt(s.vr[m]);
-    if (src === 2) { s.ciLo[m] = Math.max(0, Math.min(s.lo[m], s.meq[m]) - Z * sd); s.ciHi[m] = Math.max(s.hi[m], s.meq[m]) + Z * sd; }
+    if (src === 2) {
+      const sdc = Math.sqrt(s.vr[m] + bp.a * s.meq[m] + bp.b2 * s.meq[m] * s.meq[m]);
+      s.ciLo[m] = Math.max(0, Math.min(s.lo[m], s.meq[m]) - bp.k * Z * sdc); s.ciHi[m] = Math.max(s.hi[m], s.meq[m]) + bp.k * Z * sdc;
+    }
     else if (src === 1) { s.ciLo[m] = Math.max(0, s.meq[m] - Z * sd); s.ciHi[m] = s.meq[m] + Z * sd; }
     else { s.ciLo[m] = s.meq[m]; s.ciHi[m] = s.meq[m]; }
     s.naive[m] = m < ds.meta.viirs_first_ym ? s.mp[m] : s.vp[m];

@@ -9,16 +9,17 @@ const EPOCH = Date.UTC(2000, 0, 1);
 let index: HotIndex | null = null;
 let hotBase = "";
 // Raw-hotspot packs (~120 MB) are served from the public repo when the host doesn't carry them.
-const REPO_PACKS: string =
-  import.meta.env.VITE_HOTSPOT_BASE ?? "https://raw.githubusercontent.com/reshma994/thermal-twins/Nitant/web/public/data/india/hotspots";
+const REPO_DATA: string =
+  import.meta.env.VITE_HOTSPOT_BASE ?? "https://raw.githubusercontent.com/reshma994/thermal-twins/Nitant/web/public/data";
 
 async function loadIndex(base: string): Promise<HotIndex> {
   try {
     const r = await fetch(`${base}/hotspots/index.json`);
     if (r.ok && (r.headers.get("content-type") || "").includes("json")) { hotBase = `${base}/hotspots`; return await r.json(); }
   } catch { /* fall through to repo-hosted packs */ }
-  hotBase = REPO_PACKS;
-  const r = await fetch(`${REPO_PACKS}/index.json`);
+  const region = base.split("/").filter(Boolean).pop();
+  hotBase = `${REPO_DATA}/${region}/hotspots`;
+  const r = await fetch(`${hotBase}/index.json`);
   if (!r.ok) throw new Error(`hotspot index unavailable (HTTP ${r.status})`);
   return await r.json();
 }

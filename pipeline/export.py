@@ -15,7 +15,7 @@ from datetime import date
 import numpy as np
 import pandas as pd
 
-from .config import AOIS, PROCESSED, WEB_DATA
+from .config import AOIS, INTERIM, PROCESSED, WEB_DATA
 
 YM0 = 2000 * 12  # month index origin (Jan 2000)
 SCALE = 10  # fixed-point for fractional counts
@@ -29,7 +29,16 @@ PRESETS = {
         {"id": "odisha", "name": "Odisha", "bbox": [81.3, 17.8, 87.5, 22.6]},
         {"id": "northeast_jhum", "name": "Mizoram & Manipur (shifting cultivation)", "bbox": [92.2, 21.9, 94.8, 25.7]},
         {"id": "deccan", "name": "Telangana & Andhra Pradesh", "bbox": [76.7, 12.6, 84.8, 19.9]},
-    ]
+    ],
+    "argentina": [
+        {"id": "all", "name": "All Argentina", "bbox": None},
+        {"id": "delta_parana", "name": "Paraná Delta (wetland fires)", "bbox": [-60.95, -34.4, -58.3, -32.0]},
+        {"id": "gran_chaco", "name": "Gran Chaco (forest clearing)", "bbox": [-64.5, -27.0, -58.5, -22.0]},
+        {"id": "corrientes_ibera", "name": "Corrientes & Iberá wetlands", "bbox": [-59.7, -30.5, -55.7, -27.2]},
+        {"id": "cordoba_sierras", "name": "Córdoba sierras", "bbox": [-65.6, -33.6, -63.6, -29.6]},
+        {"id": "andean_patagonia", "name": "Andean Patagonia forests", "bbox": [-72.4, -46.0, -70.3, -39.0]},
+        {"id": "la_pampa_caldenal", "name": "La Pampa & Caldenal grasslands", "bbox": [-68.3, -39.4, -63.4, -35.0]},
+    ],
 }
 
 
@@ -75,13 +84,22 @@ def run(aoi: str) -> None:
         f.write(bytes(buf))
 
     val = {k: models[k]["validation"] for k in ("SNPP->Aqua", "SNPP->Terra")}
+    cov_path = src / "coverage.json"
+    coverage = json.loads(cov_path.read_text(encoding="utf-8")) if cov_path.exists() else None
+    import pyarrow.parquet as pq
+    n_det = pq.ParquetFile(INTERIM / aoi / "detections.parquet").metadata.num_rows
+    from datetime import datetime, timedelta, timezone
+    last = pd.read_parquet(INTERIM / aoi / "detections.parquet", columns=["acq_date"])["acq_date"].max().date()
+    data_end = min(last, datetime.now(timezone.utc).date() - timedelta(days=1)).isoformat()
     curve = {k: models[k]["detection_curve"] for k in ("SNPP->Aqua", "SNPP->Terra")}
     meta = {
         "aoi": aoi, "name": AOIS[aoi].name, "generated": date.today().isoformat(),
-        "data_end": "2026-11-14", "ym0": YM0, "n": int(len(t)), "h3_res": 5, "cells": cells, "columns": layout,
+        "data_end": data_end, "ym0": YM0, "n": int(len(t)), "h3_res": 5, "cells": cells, "columns": layout,
         "splice_ym": meta_h["splice_ym"] - YM0, "snpp_last_ym": meta_h["snpp_last_ym"] - YM0,
         "aqua_first_ym": meta_h["aqua_first_ym"] - YM0, "viirs_first_ym": meta_h["viirs_first_ym"] - YM0,
         "modis_first_ym": 2000 * 12 + 10 - YM0, "drift": meta_h["drift"], "validation": val,
+        "drift_focus_name": meta_h.get("drift_focus_name", ""), "bbox": list(AOIS[aoi].bbox),
+        "coverage": coverage, "n_detections": int(n_det),
         "detection_curve": curve, "collocated": models.get("collocated_SNPP_Aqua"),
         "presets": PRESETS.get(aoi, []),
         "src_codes": {"0": "MODIS observed (Terra+Aqua)", "1": "MODIS Terra observed + modeled Aqua (pre-Jul 2002)",

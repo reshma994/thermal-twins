@@ -1,0 +1,265 @@
+{
+ "splice_ym": 24264,
+ "splice_year": 2022,
+ "envelope": 0.16200000000000003,
+ "n20_scale": {
+  "D": 0.9793491495790391,
+  "N": 0.9811077891209742
+ },
+ "snpp_last_ym": 24321,
+ "aqua_first_ym": 24030,
+ "viirs_first_ym": 24144,
+ "drift": {
+  "national": [
+   {
+    "year": 2012,
+    "aqua_ratio": 1.065,
+    "terra_ratio": 1.057,
+    "modis_ratio": 1.062,
+    "terra_lst": 10.25,
+    "aqua_lst": 13.890000343322754
+   },
+   {
+    "year": 2013,
+    "aqua_ratio": 0.958,
+    "terra_ratio": 0.977,
+    "modis_ratio": 0.965,
+    "terra_lst": 10.229999542236328,
+    "aqua_lst": 13.899999618530273
+   },
+   {
+    "year": 2014,
+    "aqua_ratio": 0.956,
+    "terra_ratio": 1.081,
+    "modis_ratio": 1.003,
+    "terra_lst": 10.260000228881836,
+    "aqua_lst": 13.890000343322754
+   },
+   {
+    "year": 2015,
+    "aqua_ratio": 1.028,
+    "terra_ratio": 1.04,
+    "modis_ratio": 1.033,
+    "terra_lst": 10.239999771118164,
+    "aqua_lst": 13.9399995803833
+   },
+   {
+    "year": 2016,
+    "aqua_ratio": 1.072,
+    "terra_ratio": 1.012,
+    "modis_ratio": 1.05,
+    "terra_lst": 10.25,
+    "aqua_lst": 13.920000076293945
+   },
+   {
+    "year": 2017,
+    "aqua_ratio": 0.996,
+    "terra_ratio": 1.054,
+    "modis_ratio": 1.018,
+    "terra_lst": 10.239999771118164,
+    "aqua_lst": 13.90999984741211
+   },
+   {
+    "year": 2018,
+    "aqua_ratio": 0.943,
+    "terra_ratio": 0.903,
+    "modis_ratio": 0.928,
+    "terra_lst": 10.25,
+    "aqua_lst": 13.920000076293945
+   },
+   {
+    "year": 2019,
+    "aqua_ratio": 1.017,
+    "terra_ratio": 0.994,
+    "modis_ratio": 1.009,
+    "terra_lst": 10.260000228881836,
+    "aqua_lst": 13.90999984741211
+   },
+   {
+    "year": 2020,
+    "aqua_ratio": 0.876,
+    "terra_ratio": 0.775,
+    "modis_ratio": 0.838,
+    "terra_lst": 10.25,
+    "aqua_lst": 13.899999618530273
+   },
+   {
+    "year": 2021,
+    "aqua_ratio": 0.89,
+    "terra_ratio": 0.89,
+    "modis_ratio": 0.89,
+    "terra_lst": 10.180000305175781,
+    "aqua_lst": 13.899999618530273
+   },
+   {
+    "year": 2022,
+    "aqua_ratio": 0.797,
+    "terra_ratio": 0.717,
+    "modis_ratio": 0.766,
+    "terra_lst": 10.039999961853027,
+    "aqua_lst": 13.970000267028809
+   },
+   {
+    "year": 2023,
+    "aqua_ratio": 0.871,
+    "terra_ratio": 0.875,
+    "modis_ratio": 0.873,
+    "terra_lst": 9.829999923706055,
+    "aqua_lst": 14.15999984741211
+   },
+   {
+    "year": 2024,
+    "aqua_ratio": 1.165,
+    "terra_ratio": 0.914,
+    "modis_ratio": 1.072,
+    "terra_lst": 9.510000228881836,
+    "aqua_lst": 14.539999961853027
+   },
+   {
+    "year": 2025,
+    "aqua_ratio": 1.022,
+    "terra_ratio": 0.726,
+    "modis_ratio": 0.913,
+    "terra_lst": 9.109999656677246,
+    "aqua_lst": 15.050000190734863
+   },
+   {
+    "year": 2026,
+    "aqua_ratio": 1.029,
+    "terra_ratio": 0.685,
+    "modis_ratio": 0.908,
+    "terra_lst": 8.600000381469727,
+    "aqua_lst": 15.789999961853027
+   }
+  ],
+  "focus": [
+   {
+    "year": 2012,
+    "aqua_ratio": 1.054,
+    "terra_ratio": 1.07,
+    "modis_ratio": 1.06,
+    "terra_lst": 10.25,
+    "aqua_lst": 13.890000343322754
+   },
+   {
+    "year": 2013,
+    "aqua_ratio": 0.95,
+    "terra_ratio": 0.958,
+    "modis_ratio": 0.953,
+    "terra_lst": 10.229999542236328,
+    "aqua_lst": 13.899999618530273
+   },
+   {
+    "year": 2014,
+    "aqua_ratio": 0.956,
+    "terra_ratio": 1.085,
+    "modis_ratio": 1.008,
+    "terra_lst": 10.260000228881836,
+    "aqua_lst": 13.890000343322754
+   },
+   {
+    "year": 2015,
+    "aqua_ratio": 0.994,
+    "terra_ratio": 1.109,
+    "modis_ratio": 1.04,
+    "terra_lst": 10.239999771118164,
+    "aqua_lst": 13.9399995803833
+   },
+   {
+    "year": 2016,
+    "aqua_ratio": 1.122,
+    "terra_ratio": 0.957,
+    "modis_ratio": 1.058,
+    "terra_lst": 10.25,
+    "aqua_lst": 13.920000076293945
+   },
+   {
+    "year": 2017,
+    "aqua_ratio": 1.049,
+    "terra_ratio": 1.075,
+    "modis_ratio": 1.059,
+    "terra_lst": 10.239999771118164,
+    "aqua_lst": 13.90999984741211
+   },
+   {
+    "year": 2018,
+    "aqua_ratio": 1.101,
+    "terra_ratio": 0.924,
+    "modis_ratio": 1.033,
+    "terra_lst": 10.25,
+    "aqua_lst": 13.920000076293945
+   },
+   {
+    "year": 2019,
+    "aqua_ratio": 1.042,
+    "terra_ratio": 1.001,
+    "modis_ratio": 1.026,
+    "terra_lst": 10.260000228881836,
+    "aqua_lst": 13.90999984741211
+   },
+   {
+    "year": 2020,
+    "aqua_ratio": 0.971,
+    "terra_ratio": 0.805,
+    "modis_ratio": 0.905,
+    "terra_lst": 10.25,
+    "aqua_lst": 13.899999618530273
+   },
+   {
+    "year": 2021,
+    "aqua_ratio": 1.007,
+    "terra_ratio": 1.028,
+    "modis_ratio": 1.015,
+    "terra_lst": 10.180000305175781,
+    "aqua_lst": 13.899999618530273
+   },
+   {
+    "year": 2022,
+    "aqua_ratio": 0.93,
+    "terra_ratio": 0.816,
+    "modis_ratio": 0.884,
+    "terra_lst": 10.039999961853027,
+    "aqua_lst": 13.970000267028809
+   },
+   {
+    "year": 2023,
+    "aqua_ratio": 0.968,
+    "terra_ratio": 0.922,
+    "modis_ratio": 0.95,
+    "terra_lst": 9.829999923706055,
+    "aqua_lst": 14.15999984741211
+   },
+   {
+    "year": 2024,
+    "aqua_ratio": 1.164,
+    "terra_ratio": 1.121,
+    "modis_ratio": 1.147,
+    "terra_lst": 9.510000228881836,
+    "aqua_lst": 14.539999961853027
+   },
+   {
+    "year": 2025,
+    "aqua_ratio": 1.134,
+    "terra_ratio": 0.953,
+    "modis_ratio": 1.061,
+    "terra_lst": 9.109999656677246,
+    "aqua_lst": 15.050000190734863
+   },
+   {
+    "year": 2026,
+    "aqua_ratio": 1.115,
+    "terra_ratio": 0.934,
+    "modis_ratio": 1.046,
+    "terra_lst": 8.600000381469727,
+    "aqua_lst": 15.789999961853027
+   }
+  ]
+ },
+ "drift_focus_name": "Gran Chaco",
+ "bbox": [
+  -73.6,
+  -55.2,
+  -53.5,
+  -21.7
+ ]
+}

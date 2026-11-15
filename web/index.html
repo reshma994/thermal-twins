@@ -45,7 +45,9 @@
       <aside class="panel" aria-label="Controls">
         <section>
           <h2>Area of interest</h2>
-          <label class="lbl" for="preset">Preset region</label>
+          <label class="lbl" for="region">Country</label>
+          <select id="region" class="region-select"></select>
+          <label class="lbl" for="preset" style="margin-top:8px">Preset region</label>
           <select id="preset"></select>
           <div class="row btns">
             <button id="draw-rect" class="btn" aria-pressed="false">▭ Box</button>
@@ -104,9 +106,9 @@
       <section class="content">
         <div class="kpis" id="overview" aria-label="Project at a glance">
           <div class="kpi"><div class="kv">26 yrs</div><div class="kk">Nov 2000 → <span id="kpi-end">today</span>, one consistent record</div></div>
-          <div class="kpi"><div class="kv">18.0 M</div><div class="kk">NASA FIRMS fire detections harmonized (India)</div></div>
+          <div class="kpi"><div class="kv" id="kpi-dets">–</div><div class="kk" id="kpi-dets-k">NASA FIRMS fire detections harmonized</div></div>
           <div class="kpi"><div class="kv">5 satellites</div><div class="kk">Terra · Aqua · Suomi NPP · NOAA-20 · NOAA-21</div></div>
-          <div class="kpi accent"><div class="kv">0.79 <span class="vs">vs 0.50</span></div><div class="kk">held-out skill vs equal-area binning (2017–20)</div></div>
+          <div class="kpi accent"><div class="kv" id="kpi-skill">–</div><div class="kk">held-out skill vs equal-area binning (2017–20)</div></div>
         </div>
 
         <div class="maprow">
@@ -157,7 +159,7 @@
                 <li><b>Resolution.</b> VIIRS 375 m pixels split one fire into many points → counted as unique H3 cells per overpass.</li>
                 <li><b>Sensitivity.</b> VIIRS sees fires MODIS cannot → a learned, physically-constrained MODIS detection curve (FRP-binned).</li>
                 <li><b>Constellation.</b> 1 → 5 satellites over 26 years → one fixed virtual reference (Terra + Aqua).</li>
-                <li><b>Orbit drift.</b> Aqua drifted 13:30 → 15:06, Terra 10:47 → 09:11 → splice to VIIRS-derived values from <span id="splice-y">2021</span>.</li>
+                <li><b>Orbit drift.</b> <span id="drift-txt">Aqua and Terra drift away from their design overpass times</span> → splice to VIIRS-derived values from <span id="splice-y">2021</span>.</li>
                 <li><b>Non-fire heat.</b> Gas flares, kilns, industry → FIRMS static-source type + persistence mask.</li>
               </ol>
               <div id="timeline" class="timeline" aria-label="Satellite timeline"></div>
@@ -165,7 +167,8 @@
             <div>
               <h4>Held-out validation (2017–2020, never seen in training)</h4>
               <div id="val-table"></div>
-              <p class="foot">Pseudo-R² = share of cell-month variability explained (H3 r5 ≈ 252 km²). WAPE = national monthly absolute error / total.</p>
+              <p class="foot">Pseudo-R² = share of cell-month variability explained (H3 r5 ≈ 253 km²). WAPE = national monthly absolute error / total.</p>
+              <p class="foot" id="cov-line"></p>
             </div>
             <div>
               <h4>MODIS detection curve, learned from data</h4>

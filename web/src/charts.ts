@@ -295,7 +295,8 @@ export function curveOption(meta: Dataset["meta"]) {
 }
 
 export function driftOption(meta: Dataset["meta"]) {
-  const pj = meta.drift["punjab_haryana"], ind = meta.drift["india"];
+  const pj = meta.drift["focus"] ?? meta.drift["punjab_haryana"], ind = meta.drift["national"] ?? meta.drift["india"];
+  const focus = meta.drift_focus_name || "Focus area", nat = meta.name || "National";
   const yrs = pj.map((r) => r.year).filter((y) => y >= 2013);
   const pick = (rows: any[], k: string) => rows.filter((r) => r.year >= 2013).map((r) => r[k]);
   const splice = meta.splice_ym / 12 + 2000;
@@ -310,10 +311,10 @@ export function driftOption(meta: Dataset["meta"]) {
       { type: "value", min: 8, max: 16, name: "overpass hour", nameTextStyle: { color: MUTED, align: "right" }, ...axisStyle, splitLine: { show: false }, axisLabel: { color: MUTED, formatter: "{value}:00" } },
     ],
     series: [
-      { name: "Punjab ratio", type: "line", data: pick(pj, "aqua_ratio"), lineStyle: { color: WARN, width: 2.5 }, itemStyle: { color: WARN },
+      { name: `${focus} ratio`, type: "line", data: pick(pj, "aqua_ratio"), lineStyle: { color: WARN, width: 2.5 }, itemStyle: { color: WARN },
         markLine: { silent: true, symbol: "none", lineStyle: { color: MUTED, type: "dashed" }, label: { color: MUTED, fontSize: 10.5 },
           data: [{ yAxis: 1, label: { formatter: "no bias", position: "insideStartTop" } }, { xAxis: String(splice), label: { formatter: "VIIRS-derived →", position: "insideEndTop" } }] } },
-      { name: "India ratio", type: "line", data: pick(ind, "aqua_ratio"), lineStyle: { color: ACC, width: 2 }, itemStyle: { color: ACC } },
+      { name: `${nat} ratio`, type: "line", data: pick(ind, "aqua_ratio"), lineStyle: { color: ACC, width: 2 }, itemStyle: { color: ACC } },
       { name: "Aqua time", type: "line", yAxisIndex: 1, data: pick(ind, "aqua_lst"), lineStyle: { color: BLUE, type: "dotted" }, itemStyle: { color: BLUE }, symbol: "none" },
       { name: "Terra time", type: "line", yAxisIndex: 1, data: pick(ind, "terra_lst"), lineStyle: { color: "#9f8fd0", type: "dotted" }, itemStyle: { color: "#9f8fd0" }, symbol: "none" },
     ],

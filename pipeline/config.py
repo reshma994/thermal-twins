@@ -31,6 +31,7 @@ class AOI:
 
 AOIS: dict[str, AOI] = {a.key: a for a in [
     AOI("india", "India", (68.0, 6.5, 97.5, 37.5), 0, "India", crop=False),
+    AOI("argentina", "Argentina", (-73.6, -55.2, -53.5, -21.7), 0, "Argentina", crop=False),
     AOI("punjab_haryana", "Punjab & Haryana, India", (73.8, 27.6, 77.6, 32.6), 1, "India"),
     AOI("california", "California, USA", (-124.5, 32.5, -114.1, 42.0), 2, "United_States"),
     AOI("rondonia", "Rondônia, Brazil (Amazon arc)", (-66.9, -13.7, -59.7, -7.9), 3, "Brazil"),

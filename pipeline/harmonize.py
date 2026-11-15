@@ -23,7 +23,11 @@ from .dpt import ALPHA, BIN_LABELS, load_units
 SNPP_LAST_YM = 2026 * 12 + 9  # Oct 2026: last full S-NPP month (delivery ended 2026-11-02)
 AQUA_FIRST_YM = 2002 * 12 + 6  # Jul 2002
 VIIRS_FIRST_YM = 2012 * 12 + 0
-PUNJAB = AOIS["punjab_haryana"].bbox
+# Focus sub-area per region for the orbit-drift diagnostic (name, bbox west, south, east, north)
+FOCUS = {
+    "india": ("Punjab & Haryana", AOIS["punjab_haryana"].bbox),
+    "argentina": ("Gran Chaco", (-64.5, -27.0, -58.5, -22.0)),
+}
 
 
 def _lookup(model: dict, key: str) -> dict:
@@ -111,14 +115,14 @@ def run(aoi: str) -> None:
 
     # ---- Orbit-drift diagnostic: actual / VIIRS-predicted per year (national + Punjab)
     lat_lon = {c: h3.cell_to_latlng(c) for c in u["cell"].unique()}
-    w_, s_, e_, n_ = PUNJAB
-    punjab_cells = {c for c, (la, lo) in lat_lon.items() if s_ <= la <= n_ and w_ <= lo <= e_}
+    focus_name, (w_, s_, e_, n_) = FOCUS.get(aoi, (AOIS[aoi].name, AOIS[aoi].bbox))
+    focus_cells = {c for c, (la, lo) in lat_lon.items() if s_ <= la <= n_ and w_ <= lo <= e_}
     j = act.join(pred[["pred_A", "pred_T"]], how="outer").fillna(0)
     j = j[j.index.get_level_values("ym") >= VIIRS_FIRST_YM]
     lst = (u[(u.daynight == "D") & u.platform.isin(["Terra", "Aqua", "SNPP", "NOAA20", "NOAA21"])]
            .assign(year=lambda d: d.ym // 12).groupby(["year", "platform"])["lst_hour"].mean().unstack().round(2))
     drift = {}
-    for name, sel in [("india", None), ("punjab_haryana", punjab_cells)]:
+    for name, sel in [("national", None), ("focus", focus_cells)]:
         jj = j if sel is None else j[j.index.get_level_values("cell").isin(sel)]
         y = jj.groupby(jj.index.get_level_values("ym") // 12).sum()
         d = pd.DataFrame({"aqua_ratio": y.units_Aqua / y.pred_A, "terra_ratio": y.units_Terra / y.pred_T,
@@ -128,7 +132,7 @@ def run(aoi: str) -> None:
         print(f"\n[drift] {name}: MODIS actual / VIIRS-predicted, with mean daytime local solar time\n{d.to_string()}")
 
     # ---- Splice month: first year >= 2021 whose national MODIS ratio leaves the 2012-2020 envelope
-    nat = drift["india"]["modis_ratio"]
+    nat = drift["national"]["modis_ratio"]
     base = nat.loc[2013:2020]
     thr = max(0.08, 2 * float(base.std()), float((base - 1).abs().max()))
     late = nat.loc[2021:]
@@ -169,13 +173,14 @@ def run(aoi: str) -> None:
     h["meq_var"] = np.where(use_pred, h["var"], np.where(pre_aqua, fill, 0.0))
     h["modis_units"], h["modis_pix"] = modis, (h["pix_Terra"] + h["pix_Aqua"]).to_numpy(float)
     keep = ["cell", "ym", "wk", "src", "meq", "meq_lo", "meq_hi", "meq_var", "modis_units", "modis_pix",
-            "pred", "viirs_units", "viirs_pix"]
-    h = h[keep].rename(columns={"pred": "viirs_meq"})
+            "pred", "lo", "hi", "var", "viirs_units", "viirs_pix"]
+    h = h[keep].rename(columns={"pred": "viirs_meq", "lo": "viirs_lo", "hi": "viirs_hi", "var": "viirs_var"})
     out = PROCESSED / aoi
     h.to_parquet(out / "harmonized_r5_week.parquet", index=False)
     meta = {"splice_ym": splice_ym, "splice_year": splice_year, "envelope": thr, "n20_scale": n20_scale,
             "snpp_last_ym": SNPP_LAST_YM, "aqua_first_ym": AQUA_FIRST_YM, "viirs_first_ym": VIIRS_FIRST_YM,
-            "drift": {k: d.reset_index(names="year").to_dict(orient="records") for k, d in drift.items()}}
+            "drift": {k: d.reset_index(names="year").to_dict(orient="records") for k, d in drift.items()},
+            "drift_focus_name": focus_name, "bbox": list(AOIS[aoi].bbox)}
     (out / "harmonize_meta.json").write_text(json.dumps(meta, indent=1, default=float), encoding="utf-8")
     nat_series = h.groupby("ym")[["meq", "modis_units", "viirs_units", "viirs_meq", "modis_pix", "viirs_pix"]].sum()
     nat_series.to_csv(out / "national_monthly.csv")

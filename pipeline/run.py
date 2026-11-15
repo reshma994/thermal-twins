@@ -11,7 +11,7 @@ import time
 from . import bulk, clean, dpt, export, fetch, grid, harmonize
 from .config import AOIS, SOURCES
 
-STAGES = ["bulk", "fetch", "clean", "grid", "dpt", "harmonize", "export", "hotspots", "figures"]
+STAGES = ["bulk", "fetch", "clean", "grid", "dpt", "harmonize", "coverage", "export", "hotspots", "figures"]
 
 
 def run_stage(name: str, aoi: str) -> None:
@@ -28,6 +28,9 @@ def run_stage(name: str, aoi: str) -> None:
         dpt.run(aoi)
     elif name == "harmonize":
         harmonize.run(aoi)
+    elif name == "coverage":
+        from . import coverage
+        coverage.run(aoi)
     elif name == "export":
         export.run(aoi)
     elif name == "hotspots":

@@ -1,0 +1,60 @@
+{
+ "method": "split-conformal; calibrate 2017-2018, test 2019-2020",
+ "scales": [
+  {
+   "scale": "cell",
+   "cells": 1,
+   "a": 0.906,
+   "b2": 0.05068,
+   "k": 1.138,
+   "coverage_test": 0.895,
+   "median_rel_halfwidth_ge20": 0.677,
+   "n_cal": 88334,
+   "n_test": 81421
+  },
+  {
+   "scale": "r4_1770km2",
+   "cells": 7,
+   "a": 1.8429,
+   "b2": 0.03841,
+   "k": 1.063,
+   "coverage_test": 0.886,
+   "median_rel_halfwidth_ge20": 0.633,
+   "n_cal": 24923,
+   "n_test": 23914
+  },
+  {
+   "scale": "r3_12400km2",
+   "cells": 49,
+   "a": 4.5929,
+   "b2": 0.02701,
+   "k": 1.035,
+   "coverage_test": 0.872,
+   "median_rel_halfwidth_ge20": 0.74,
+   "n_cal": 5697,
+   "n_test": 5736
+  },
+  {
+   "scale": "r2_87000km2",
+   "cells": 343,
+   "a": 21.1919,
+   "b2": 0.00915,
+   "k": 0.878,
+   "coverage_test": 0.874,
+   "median_rel_halfwidth_ge20": 0.863,
+   "n_cal": 1240,
+   "n_test": 1243
+  },
+  {
+   "scale": "national",
+   "cells": 100000,
+   "a": 328.2952,
+   "b2": 0.0,
+   "k": 0.817,
+   "coverage_test": 0.917,
+   "median_rel_halfwidth_ge20": 0.575,
+   "n_cal": 24,
+   "n_test": 24
+  }
+ ]
+}

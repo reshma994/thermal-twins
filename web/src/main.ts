@@ -1,6 +1,6 @@
 import "./style.css";
 import { cellsToMultiPolygon, cellToLatLng, gridDisk, latLngToCell, polygonToCells } from "h3-js";
-import { aggregate, Dataset, loadDataset, MONTHS, Series, srcOf, ymLabel } from "./data";
+import { aggregate, bandParams, Dataset, loadDataset, MONTHS, Series, srcOf, ymLabel } from "./data";
 import { bboxRing, circleRing, FireMap, FIRE_RAMP, Ring } from "./map";
 import {
   annual, annualOption, baselineMonth, calendarOption, CalMode, climOption, criticalPeriod, Ctx, curveOption, driftOption,
@@ -9,7 +9,9 @@ import {
 import { fmt, fmtPct, median, percentileRank } from "./stats";
 import { hotspotsCsv, isoToDay } from "./hotspots";
 
-const BASE = "./data/india";
+const REGIONS: Record<string, string> = { india: "India", argentina: "Argentina" };
+const REGION = (() => { const r = new URLSearchParams(location.hash.slice(1)).get("region") || "india"; return r in REGIONS ? r : "india"; })();
+const BASE = `./data/${REGION}`;
 const CELL_KM2 = 252.9;
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -47,8 +49,8 @@ function makeAoiFromCells(cells: string[], name: string): Aoi {
 
 function setAoi(a: Aoi, fit = true) {
   aoi = a;
-  s = aggregate(ds, aoi.mask);
-  if (a.ring) fmap.setAoi(a.ring, fit); else { fmap.setAoi(null); if (fit) fmap.fitIndia(); }
+  s = aggregate(ds, aoi.mask, aoi.nCells);
+  if (a.ring) fmap.setAoi(a.ring, fit); else { fmap.setAoi(null); if (fit) fmap.fitAll(ds.meta.bbox); }
   $("aoi-info").textContent = `${a.name} · ${fmt(a.nCells)} cells ≈ ${fmt(a.nCells * CELL_KM2)} km²`;
   writeHash();
   renderAll();
@@ -167,6 +169,7 @@ function renderBrief() {
     </div>
     <div class="flag info">${critTxt}</div>
     ${timingTxt}
+    ${(() => { const bp = bandParams(ds, aoi.nCells); return bp.reliable ? "" : `<div class="flag info">Small area for this region: VIIRS-derived months carry wide uncertainty here (typical 90% band ±${Math.round(bp.halfWidth * 100)}%). For firm numbers, select ≥ 12,000 km².</div>`; })()}
     ${Number.isFinite(naiveK) ? `<div class="flag">Naive FIRMS splice makes 2012+ look <b>${naiveK.toFixed(1)}×</b> busier here — a sensor artifact, not fire.</div>` : ""}
     ${Number.isFinite(driftPct) && Math.abs(driftPct) > 5 ? `<div class="flag">Raw MODIS reads <b>${fmtPct(driftPct)}</b> vs harmonized in 2025–26 here: Terra/Aqua orbit drift changed when they look.</div>` : ""}`;
 }
@@ -196,6 +199,12 @@ function renderTrust() {
     `<div class="tl-axis"><span></span><div><span>2000</span><span>2006</span><span>2013</span><span>2020</span><span>2027</span></div></div>
      <p class="foot">Striped = orbit drifting. MODIS ends 2026–27; Suomi NPP delivery ended 2 Nov 2026.</p>`;
   $("splice-y").textContent = String(yearOf(ds.meta.splice_ym));
+  const dn = (ds.meta.drift["national"] ?? []).filter((r) => r.year >= 2013);
+  if (dn.length > 1) {
+    const hm = (h: number) => `${Math.floor(h)}:${String(Math.round((h % 1) * 60)).padStart(2, "0")}`;
+    const f = dn[0], l = dn[dn.length - 1];
+    $("drift-txt").textContent = `Measured from detection times here: Aqua ${hm(f.aqua_lst)} → ${hm(l.aqua_lst)}, Terra ${hm(f.terra_lst)} → ${hm(l.terra_lst)} local solar time (${f.year}→${l.year})`;
+  }
 }
 
 /* ------------------------------ downloads ------------------------------ */
@@ -239,6 +248,7 @@ async function hotCsv() {
 /* ------------------------------ URL state ------------------------------ */
 function writeHash() {
   const p = new URLSearchParams();
+  if (REGION !== "india") p.set("region", REGION);
   if (aoi.id.startsWith("preset:")) p.set("aoi", aoi.id.slice(7));
   else if (aoi.ring) p.set("poly", aoi.ring.map(([x, y]) => `${x.toFixed(3)},${y.toFixed(3)}`).join(";"));
   if (state.naive) p.set("mode", "naive");
@@ -261,9 +271,24 @@ function aoiFromHash(): Aoi | null {
 async function boot() {
   ds = await loadDataset(BASE);
   $("hdr-end").textContent = new Date(ds.meta.data_end + "T00:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+  $("hdr-region").textContent = REGIONS[REGION];
+  const rs = $<HTMLSelectElement>("region");
+  rs.innerHTML = Object.entries(REGIONS).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+  rs.value = REGION;
+  rs.onchange = () => { location.hash = rs.value === "india" ? "" : `region=${rs.value}`; location.reload(); };
+  if (ds.meta.n_detections) $("kpi-dets").textContent = `${(ds.meta.n_detections / 1e6).toFixed(1)} M`;
+  $("kpi-dets-k").textContent = `NASA FIRMS fire detections harmonized (${REGIONS[REGION]})`;
+  const va = ds.meta.validation["SNPP->Aqua"];
+  $("kpi-skill").innerHTML = `${va.DPT_regional.cell_month_pseudo_r2.toFixed(2)} <span class="vs">vs ${va.B1_equal_area_units_scaled.cell_month_pseudo_r2.toFixed(2)}</span>`;
+  const cov = ds.meta.coverage?.scales ?? [];
+  if (cov.length) {
+    const lo = Math.min(...cov.map((c) => c.coverage_test)), hi = Math.max(...cov.map((c) => c.coverage_test));
+    $("cov-line").textContent = `Uncertainty check: our 90% bands contained the observed MODIS count in ${(lo * 100).toFixed(0)}–${(hi * 100).toFixed(0)}% of held-out 2019–2020 area-months, across five area sizes (one 253 km² cell → all of ${REGIONS[REGION]}).`;
+  }
   const endLabel = $("hdr-end").textContent!;
   $("chip-end").textContent = endLabel; $("kpi-end").textContent = endLabel;
   fmap = new FireMap($("map"), ds.meta.cells, $("map-tip"));
+  if (import.meta.env.DEV) { (window as any).__tt = { fmap, ds }; setInterval(() => { const m = fmap.map; document.documentElement.dataset.mapState = JSON.stringify({ sl: m.isStyleLoaded(), l: m.loaded(), hex: !!m.getLayer("hex"), hexSrc: m.isSourceLoaded("hex"), aoiSrc: m.isSourceLoaded("aoi"), qf: m.querySourceFeatures("hex").length, z: +m.getZoom().toFixed(2), c: m.getCenter().toArray().map((x) => +x.toFixed(2)), leg: document.getElementById("map-legend")!.innerText.length, w: m.getCanvas().width, h: m.getCanvas().height }); }, 500); }
   fmap.tipText = (i, v) => {
     const [la, lo] = cellToLatLng(ds.meta.cells[i]);
     const [m0, m1] = periodMonths();
