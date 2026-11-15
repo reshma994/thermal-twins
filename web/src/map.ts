@@ -1,4 +1,5 @@
-import maplibregl, { GeoJSONSource, Map as MlMap } from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
+import type { GeoJSONSource, Map as MlMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { cellToBoundary } from "h3-js";
 

@@ -9,13 +9,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "echarts": "5.5.1",
+    "echarts": "^6.1.0",
     "h3-js": "4.1.0",
-    "maplibre-gl": "4.7.1"
+    "maplibre-gl": "^6.18.0"
   },
   "devDependencies": {
     "typescript": "5.6.3",
-    "vite": "5.4.11"
+    "vite": "^8.3.8"
   },
   "description": "Thermal Twins web app: harmonized MODIS x VIIRS burning activity calendar",
   "engines": {
