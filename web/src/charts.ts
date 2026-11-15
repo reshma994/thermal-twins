@@ -25,32 +25,57 @@ export function baselineMonth(c: Ctx, mo: number): number[] {
   return out;
 }
 
+export interface CalScale { colors: string[]; labels: string[]; title: string }
+const COUNT_COLORS = ["#17141f", "#4a1170", "#8c2981", "#d3436e", "#f8765c", "#fdb96b", "#fcfdbf"];
+const ANOM_COLORS = ["#4b2991", "#7b5bb5", "#a79bd3", "#3a3d48", "#f6b26b", "#e8742c", "#c2410c"];
+const PCT_COLORS = ["#2c4a7a", "#3f6aa8", "#7fa6d6", "#3a3d48", "#f6b26b", "#e8742c", "#c2410c"];
+const ANOM_EDGES = [0.25, 0.5, 0.8, 1.25, 2, 4]; // ratio to median
+const PCT_EDGES = [10, 25, 40, 60, 75, 90];
+
+/** Discrete colour classes for the calendar: quantile classes (activity), ratio bands (vs median), percentile bands. */
+export function calendarScale(c: Ctx, mode: CalMode): CalScale & { classOf: (v: number, med: number, pct: number) => number } {
+  const { ds, s } = c;
+  if (mode === "count") {
+    const pos: number[] = [];
+    for (let m = 0; m <= ds.lastM; m++) if (s.src[m] >= 0) { const v = valueOf(c, m); if (v >= 0.5) pos.push(v); }
+    const br = [0.2, 0.4, 0.6, 0.8, 0.95].map((q) => quantile(pos, q));
+    const f = (v: number) => fmt(v, v < 10 ? 1 : 0);
+    const labels = ["0", `≤${f(br[0])}`, `${f(br[0])}–${f(br[1])}`, `${f(br[1])}–${f(br[2])}`, `${f(br[2])}–${f(br[3])}`, `${f(br[3])}–${f(br[4])}`, `>${f(br[4])}`];
+    return {
+      colors: COUNT_COLORS, labels, title: c.naive ? "FIRMS points / month" : "fire units / month",
+      classOf: (v) => (v < 0.5 ? 0 : 1 + br.filter((b) => v > b).length),
+    };
+  }
+  if (mode === "anom") {
+    return {
+      colors: ANOM_COLORS, labels: ["<¼×", "¼–½×", "½–0.8×", "≈ normal", "1.25–2×", "2–4×", ">4×"], title: `vs ${c.b0}–${c.b1} median`,
+      classOf: (v, med) => (med > 0 ? ANOM_EDGES.filter((e) => v / med >= e).length : v > 0 ? 6 : 3),
+    };
+  }
+  return {
+    colors: PCT_COLORS, labels: ["<10th", "10–25", "25–40", "40–60", "60–75", "75–90", ">90th"], title: `percentile vs ${c.b0}–${c.b1}`,
+    classOf: (_v, _m, pct) => PCT_EDGES.filter((e) => pct >= e).length,
+  };
+}
+
 export function calendarOption(c: Ctx, mode: CalMode, showNums: boolean) {
   const { ds, s } = c;
   const years = Array.from({ length: yearOf(ds.lastM) - 2000 + 1 }, (_, i) => 2000 + i);
   const data: any[] = [], nodata: any[] = [];
   const stats = MONTHS.map((_, mo) => { const v = baselineMonth(c, mo); return { v, med: median(v) }; });
-  let vmax = 0;
-  for (let m = 0; m <= ds.lastM; m++) if (s.src[m] >= 0) vmax = Math.max(vmax, valueOf(c, m));
+  const scale = calendarScale(c, mode);
   for (let yi = 0; yi < years.length; yi++) {
     for (let mo = 0; mo < 12; mo++) {
       const m = yi * 12 + mo;
       if (m > ds.lastM || s.src[m] < 0) { nodata.push([mo, yi, 0]); continue; }
       const v = valueOf(c, m);
       const st = stats[mo];
-      let cv: number;
-      if (mode === "count") cv = Math.log1p(v) / Math.log1p(vmax || 1);
-      else if (mode === "anom") cv = st.med > 0 ? Math.max(-2, Math.min(2, Math.log2(Math.max(v, 0.25) / st.med))) : v > 0 ? 2 : 0;
-      else cv = percentileRank(st.v, v);
-      data.push({ value: [mo, yi, cv], raw: v, m });
+      const cls = scale.classOf(v, st.med, percentileRank(st.v, v));
+      const cur = m === ds.lastM;
+      data.push({ value: [mo, yi, cls], raw: v, m, itemStyle: cur ? { borderColor: "#ffffff", borderWidth: 2.5 } : undefined });
     }
   }
-  const visualMap =
-    mode === "count"
-      ? { type: "continuous", min: 0, max: 1, inRange: { color: FIRE_RAMP }, show: false, seriesIndex: 0 }
-      : mode === "anom"
-        ? { type: "continuous", min: -2, max: 2, inRange: { color: DIVERGE }, show: false, seriesIndex: 0 }
-        : { type: "continuous", min: 0, max: 100, inRange: { color: ["#1b2a4a", "#3a4f7a", "#3a3d48", "#c26a3a", "#ff8a3d"] }, show: false, seriesIndex: 0 };
+  const visualMap = { type: "piecewise", show: false, seriesIndex: 0, pieces: scale.colors.map((color, i) => ({ value: i, color })) };
   const spliceYear = yearOf(ds.meta.splice_ym);
   return {
     ...base,
@@ -82,7 +107,11 @@ export function calendarOption(c: Ctx, mode: CalMode, showNums: boolean) {
     series: [
       {
         type: "heatmap", data, itemStyle: { borderColor: "#0b0c10", borderWidth: 1.5, borderRadius: 3 },
-        label: { show: showNums, color: "#0b0c10", fontSize: 9.5, formatter: (p: any) => (p.data.raw >= 1 ? fmt(p.data.raw) : "") },
+        label: {
+          show: showNums, fontSize: 9.5, fontWeight: 600,
+          color: (p: any) => (p.data.value[2] >= 4 || (mode !== "count" && p.data.value[2] === 3) ? "#0b0c10" : "#e8e9ee"),
+          formatter: (p: any) => (p.data.raw >= 1 ? fmt(p.data.raw) : ""),
+        },
         emphasis: { itemStyle: { borderColor: ACC2, borderWidth: 2 } },
       },
       { type: "heatmap", data: nodata, itemStyle: { color: "#14161d", borderColor: "#0b0c10", borderWidth: 1.5, decal: { symbol: "rect", dashArrayX: [1, 0], dashArrayY: [2, 4], rotation: -0.8, color: "#232634" } }, silent: false },
@@ -91,9 +120,17 @@ export function calendarOption(c: Ctx, mode: CalMode, showNums: boolean) {
 }
 
 export function legendText(mode: CalMode, c: Ctx): string {
-  if (mode === "count") return "Colour: activity (log scale), dark = none → yellow = highest month on record.";
-  if (mode === "anom") return `Colour: ratio to the ${c.b0}–${c.b1} median for that month — purple ¼× … grey 1× … orange 4×.`;
-  return `Colour: percentile among ${c.b0}–${c.b1} for that month — blue low, orange high.`;
+  if (mode === "count") return "Activity classes are quantiles of this area's own record, so every band is equally populated.";
+  if (mode === "anom") return `Each month compared with the median of the same calendar month in ${c.b0}–${c.b1}.`;
+  return `Rank of each month among the same calendar month in ${c.b0}–${c.b1}.`;
+}
+
+export function legendHtml(sc: CalScale, spliceYear: number): string {
+  const sw = sc.colors.map((col, i) => `<div class="group"><span class="sw" style="background:${col}"></span><span>${sc.labels[i]}</span></div>`).join("");
+  return `<span>${sc.title}</span><div class="scale">${sw}</div>
+    <span class="key"><span class="hatch"></span>no satellite record</span>
+    <span class="key"><span class="now"></span>current month (partial)</span>
+    <span class="key">◇ ${spliceYear}+ VIIRS-derived</span>`;
 }
 
 /** Cumulative-by-week season-to-date curves (harmonized). */
@@ -248,12 +285,12 @@ export function curveOption(meta: Dataset["meta"]) {
   };
   return {
     ...base,
-    grid: { left: 48, right: 16, top: 32, bottom: 40 },
-    legend: { top: 0, textStyle: { color: MUTED } },
+    grid: { left: 52, right: 16, top: 40, bottom: 44 },
+    legend: { top: 0, right: 0, textStyle: { color: MUTED } },
     tooltip: { trigger: "axis", backgroundColor: "#0f1117", borderColor: LINE, textStyle: { color: TXT }, valueFormatter: (v: number) => `${fmt(v, 1)}%` },
     xAxis: { type: "log", logBase: 2, name: "VIIRS fire power (MW)", nameLocation: "middle", nameGap: 26, nameTextStyle: { color: MUTED }, ...axisStyle, min: 0.25, max: 512 },
-    yAxis: { type: "value", max: 100, name: "% also seen by MODIS", nameTextStyle: { color: MUTED }, ...axisStyle },
-    series: [mk("D", ACC, "Day"), mk("N", BLUE, "Night")],
+    yAxis: { type: "value", max: 100, name: "% of VIIRS fires also seen by MODIS", nameTextStyle: { color: MUTED, align: "left" }, ...axisStyle, axisLabel: { color: MUTED, formatter: "{value}%" } },
+    series: [mk("D", ACC, "Day (13:30)"), mk("N", BLUE, "Night (01:30)")],
   };
 }
 
@@ -264,20 +301,21 @@ export function driftOption(meta: Dataset["meta"]) {
   const splice = meta.splice_ym / 12 + 2000;
   return {
     ...base,
-    grid: { left: 48, right: 52, top: 32, bottom: 28 },
-    legend: { top: 0, textStyle: { color: MUTED } },
+    grid: { left: 44, right: 48, top: 40, bottom: 58 },
+    legend: { bottom: 0, textStyle: { color: MUTED, fontSize: 11 }, itemWidth: 16 },
     tooltip: { trigger: "axis", backgroundColor: "#0f1117", borderColor: LINE, textStyle: { color: TXT } },
     xAxis: { type: "category", data: yrs, ...axisStyle, splitLine: { show: false } },
     yAxis: [
-      { type: "value", min: 0.6, max: 2.2, name: "MODIS ÷ VIIRS-expected", nameTextStyle: { color: MUTED }, ...axisStyle },
-      { type: "value", min: 8, max: 16, name: "overpass (LST h)", nameTextStyle: { color: MUTED }, ...axisStyle, splitLine: { show: false } },
+      { type: "value", min: 0.6, max: 2.2, name: "MODIS ÷ expected", nameTextStyle: { color: MUTED, align: "left" }, ...axisStyle },
+      { type: "value", min: 8, max: 16, name: "overpass hour", nameTextStyle: { color: MUTED, align: "right" }, ...axisStyle, splitLine: { show: false }, axisLabel: { color: MUTED, formatter: "{value}:00" } },
     ],
     series: [
-      { name: "Punjab & Haryana (Aqua)", type: "line", data: pick(pj, "aqua_ratio"), lineStyle: { color: WARN, width: 2.5 }, itemStyle: { color: WARN },
-        markLine: { silent: true, symbol: "none", lineStyle: { color: MUTED, type: "dashed" }, label: { color: MUTED }, data: [{ yAxis: 1, label: { formatter: "no bias" } }, { xAxis: String(splice), label: { formatter: "switch to VIIRS-derived" } }] } },
-      { name: "India (Aqua)", type: "line", data: pick(ind, "aqua_ratio"), lineStyle: { color: ACC, width: 2 }, itemStyle: { color: ACC } },
-      { name: "Aqua overpass", type: "line", yAxisIndex: 1, data: pick(ind, "aqua_lst"), lineStyle: { color: BLUE, type: "dotted" }, itemStyle: { color: BLUE }, symbol: "none" },
-      { name: "Terra overpass", type: "line", yAxisIndex: 1, data: pick(ind, "terra_lst"), lineStyle: { color: "#9f8fd0", type: "dotted" }, itemStyle: { color: "#9f8fd0" }, symbol: "none" },
+      { name: "Punjab ratio", type: "line", data: pick(pj, "aqua_ratio"), lineStyle: { color: WARN, width: 2.5 }, itemStyle: { color: WARN },
+        markLine: { silent: true, symbol: "none", lineStyle: { color: MUTED, type: "dashed" }, label: { color: MUTED, fontSize: 10.5 },
+          data: [{ yAxis: 1, label: { formatter: "no bias", position: "insideStartTop" } }, { xAxis: String(splice), label: { formatter: "VIIRS-derived →", position: "insideEndTop" } }] } },
+      { name: "India ratio", type: "line", data: pick(ind, "aqua_ratio"), lineStyle: { color: ACC, width: 2 }, itemStyle: { color: ACC } },
+      { name: "Aqua time", type: "line", yAxisIndex: 1, data: pick(ind, "aqua_lst"), lineStyle: { color: BLUE, type: "dotted" }, itemStyle: { color: BLUE }, symbol: "none" },
+      { name: "Terra time", type: "line", yAxisIndex: 1, data: pick(ind, "terra_lst"), lineStyle: { color: "#9f8fd0", type: "dotted" }, itemStyle: { color: "#9f8fd0" }, symbol: "none" },
     ],
   };
 }

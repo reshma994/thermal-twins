@@ -14,10 +14,15 @@ export class FireMap {
   private start: [number, number] | null = null;
   private pts: [number, number][] = [];
   onAoi: (ring: Ring) => void = () => {};
+  onCellClick: (cell: string) => void = () => {};
+  tipText: (i: number, v: number) => string = () => "";
+  private tip: HTMLElement | null = null;
+  private vals: Float64Array | null = null;
   onModeChange: (m: "none" | "rect" | "poly") => void = () => {};
 
-  constructor(el: HTMLElement, cells: string[]) {
+  constructor(el: HTMLElement, cells: string[], tip?: HTMLElement | null) {
     this.cells = cells;
+    this.tip = tip ?? null;
     this.map = new maplibregl.Map({
       container: el,
       style: {
@@ -37,7 +42,7 @@ export class FireMap {
       center: [80, 22.5], zoom: 3.7, attributionControl: { compact: true }, dragRotate: false, pitchWithRotate: false,
     });
     this.map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-    this.ready = new Promise((res) => this.map.on("load", () => { this.init(); res(); }));
+    this.ready = new Promise((res) => { let done = false; const go = () => { if (done) return; done = true; this.init(); res(); }; this.map.once("style.load", go); this.map.once("load", go); if (this.map.isStyleLoaded()) go(); });
   }
 
   private init() {
@@ -51,8 +56,34 @@ export class FireMap {
       id: "hex", type: "fill", source: "hex",
       paint: {
         "fill-color": ["interpolate", ["linear"], ["get", "lv"], 0, FIRE_RAMP[0], 0.17, FIRE_RAMP[1], 0.33, FIRE_RAMP[2], 0.5, FIRE_RAMP[3], 0.67, FIRE_RAMP[4], 0.83, FIRE_RAMP[5], 1, FIRE_RAMP[6]],
-        "fill-opacity": ["case", [">", ["get", "v"], 0], 0.88, 0.08],
+        "fill-opacity": ["case", [">", ["get", "v"], 0], ["case", ["==", ["get", "in"], 1], 0.92, 0.32], ["case", ["==", ["get", "in"], 1], 0.14, 0.04]],
       },
+    });
+    this.map.addLayer({ id: "hex-hover", type: "line", source: "hex", paint: { "line-color": "#ffffff", "line-width": ["case", ["boolean", ["feature-state", "hover"], false], 2, 0] } });
+    let hovered: number | null = null;
+    this.map.on("mousemove", "hex", (e) => {
+      if (this.mode !== "none" || !e.features?.length) return;
+      const id = e.features[0].id as number;
+      if (hovered !== null && hovered !== id) this.map.setFeatureState({ source: "hex", id: hovered }, { hover: false });
+      hovered = id;
+      this.map.setFeatureState({ source: "hex", id }, { hover: true });
+      this.map.getCanvas().style.cursor = "pointer";
+      if (this.tip) {
+        this.tip.hidden = false;
+        this.tip.innerHTML = this.tipText(id, this.vals ? this.vals[id] : 0);
+        this.tip.style.left = `${e.point.x}px`;
+        this.tip.style.top = `${e.point.y}px`;
+      }
+    });
+    this.map.on("mouseleave", "hex", () => {
+      if (hovered !== null) this.map.setFeatureState({ source: "hex", id: hovered }, { hover: false });
+      hovered = null;
+      if (this.mode === "none") this.map.getCanvas().style.cursor = "";
+      if (this.tip) this.tip.hidden = true;
+    });
+    this.map.on("click", "hex", (e) => {
+      if (this.mode !== "none" || !e.features?.length) return;
+      this.onCellClick(this.cells[e.features[0].id as number]);
     });
     this.map.addSource("aoi", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
     this.map.addLayer({ id: "aoi-fill", type: "fill", source: "aoi", paint: { "fill-color": "#ffd166", "fill-opacity": 0.06 } });
@@ -63,14 +94,15 @@ export class FireMap {
     this.bindDraw();
   }
 
-  async setValues(values: Float64Array) {
+  async setValues(values: Float64Array, mask?: Uint8Array) {
     await this.ready;
+    this.vals = values;
     let max = 0;
     for (const v of values) if (v > max) max = v;
     const lmax = Math.log1p(max) || 1;
     const src = this.map.getSource("hex") as GeoJSONSource;
     const data = (src as any)._data as GeoJSON.FeatureCollection;
-    data.features.forEach((f, i) => { const v = values[i] || 0; f.properties = { v, lv: Math.log1p(v) / lmax }; });
+    data.features.forEach((f, i) => { const v = values[i] || 0; f.properties = { v, lv: Math.log1p(v) / lmax, in: mask ? mask[i] : 1 }; });
     src.setData(data);
     return max;
   }

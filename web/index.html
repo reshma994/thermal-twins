@@ -11,6 +11,9 @@
     <meta property="og:description" content="26 years of NASA FIRMS fire hotspots, harmonized across MODIS and VIIRS. Draw any area, see when it burns and how today compares." />
     <meta property="og:image" content="og-image.png" />
     <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M8 4l7 12-7 12-7-12z' fill='%23ff8a3d'/%3E%3Cpath d='M24 4l7 12-7 12-7-12z' fill='%23ffd166'/%3E%3C/svg%3E" />
   </head>
   <body>
@@ -19,12 +22,22 @@
         <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><path d="M8 4l7 12-7 12-7-12z" fill="#ff8a3d"/><path d="M24 4l7 12-7 12-7-12z" fill="#ffd166"/></svg>
         <div>
           <h1>Thermal Twins</h1>
-          <p>One consistent fire record from two generations of satellites · MODIS × VIIRS harmonized · <span id="hdr-region">India</span> 2000 – <span id="hdr-end">today</span></p>
+          <p><span class="long">One consistent fire record from two generations of satellites · </span>MODIS × VIIRS harmonized · <span id="hdr-region">India</span> 2000 – <span id="hdr-end">today</span></p>
         </div>
       </div>
-      <div class="mode" role="group" aria-label="Which record to show">
-        <button id="mode-harm" class="seg on" aria-pressed="true" title="Sensor-aware harmonized MODIS-equivalent record">Harmonized</button>
-        <button id="mode-naive" class="seg" aria-pressed="false" title="What you get by simply stacking FIRMS MODIS then VIIRS hotspot counts">Naive splice</button>
+      <nav class="nav" aria-label="Sections">
+        <a href="#overview">Overview</a>
+        <a href="#calendar">Calendar</a>
+        <a href="#trends">Trends</a>
+        <a href="#method">Method</a>
+      </nav>
+      <div class="top-actions">
+        <span class="chip live" title="Latest satellite data included"><span class="dot"></span>Data to <span id="chip-end">–</span></span>
+        <div class="mode" role="group" aria-label="Which record to show">
+          <button id="mode-harm" class="seg on" aria-pressed="true" title="Sensor-aware harmonized MODIS-equivalent record">Harmonized</button>
+          <button id="mode-naive" class="seg" aria-pressed="false" title="What you get by simply stacking FIRMS MODIS then VIIRS hotspot counts">Naive splice</button>
+        </div>
+        <button id="share" class="btn icon-btn" title="Copy a link to this exact view">⧉ Share view</button>
       </div>
     </header>
 
@@ -35,8 +48,8 @@
           <label class="lbl" for="preset">Preset region</label>
           <select id="preset"></select>
           <div class="row btns">
-            <button id="draw-rect" class="btn" aria-pressed="false">▭ Draw box</button>
-            <button id="draw-poly" class="btn" aria-pressed="false">⬠ Draw polygon</button>
+            <button id="draw-rect" class="btn" aria-pressed="false">▭ Box</button>
+            <button id="draw-poly" class="btn" aria-pressed="false">⬠ Polygon</button>
           </div>
           <p class="hint" id="draw-hint">Drag on the map to draw a box, or click points and double-click to close a polygon.</p>
           <details>
@@ -89,24 +102,37 @@
       </aside>
 
       <section class="content">
+        <div class="kpis" id="overview" aria-label="Project at a glance">
+          <div class="kpi"><div class="kv">26 yrs</div><div class="kk">Nov 2000 → <span id="kpi-end">today</span>, one consistent record</div></div>
+          <div class="kpi"><div class="kv">18.0 M</div><div class="kk">NASA FIRMS fire detections harmonized (India)</div></div>
+          <div class="kpi"><div class="kv">5 satellites</div><div class="kk">Terra · Aqua · Suomi NPP · NOAA-20 · NOAA-21</div></div>
+          <div class="kpi accent"><div class="kv">0.79 <span class="vs">vs 0.50</span></div><div class="kk">held-out skill vs equal-area binning (2017–20)</div></div>
+        </div>
+
         <div class="maprow">
           <div class="mapwrap">
             <div id="map" role="img" aria-label="Map of fire activity in the selected period"></div>
+            <div class="map-tip" id="map-tip" hidden></div>
+            <div class="map-hint">Click a hexagon to inspect that area · use the panel to draw your own</div>
             <div class="legend" id="map-legend"></div>
           </div>
           <article class="brief" id="brief" aria-live="polite"></article>
         </div>
 
-        <div class="card">
+        <div class="card" id="calendar">
           <div class="card-h">
             <h3>Burning activity calendar</h3>
             <span class="sub" id="cal-sub"></span>
           </div>
+          <div class="banner" id="naive-banner" hidden>
+            <b>You are viewing the naive splice.</b> FIRMS MODIS points until 2011, VIIRS points after — the jump in 2012 is the sensor change, not more fire. Switch back to <b>Harmonized</b> for a consistent record.
+          </div>
+          <div class="cal-legend" id="cal-legend"></div>
           <div id="cal" class="chart cal"></div>
           <p class="foot" id="cal-foot"></p>
         </div>
 
-        <div class="grid2">
+        <div class="grid2" id="trends">
           <div class="card">
             <div class="card-h"><h3>Season to date vs history</h3><span class="sub" id="std-sub"></span></div>
             <div id="std" class="chart"></div>
@@ -122,7 +148,7 @@
           <div id="annual" class="chart"></div>
         </div>
 
-        <div class="card trust">
+        <div class="card trust" id="method">
           <div class="card-h"><h3>Why this record can be trusted</h3><span class="sub">Method &amp; validation</span></div>
           <div class="trust-grid">
             <div>

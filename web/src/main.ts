@@ -1,10 +1,10 @@
 import "./style.css";
-import { latLngToCell, polygonToCells } from "h3-js";
+import { cellsToMultiPolygon, cellToLatLng, gridDisk, latLngToCell, polygonToCells } from "h3-js";
 import { aggregate, Dataset, loadDataset, MONTHS, Series, srcOf, ymLabel } from "./data";
 import { bboxRing, circleRing, FireMap, FIRE_RAMP, Ring } from "./map";
 import {
   annual, annualOption, baselineMonth, calendarOption, CalMode, climOption, criticalPeriod, Ctx, curveOption, driftOption,
-  legendText, makeChart, seasonOption, yearOf,
+  calendarScale, legendHtml, legendText, makeChart, seasonOption, yearOf,
 } from "./charts";
 import { fmt, fmtPct, median, percentileRank } from "./stats";
 import { hotspotsCsv, isoToDay } from "./hotspots";
@@ -37,6 +37,14 @@ function makeAoi(id: string, name: string, ring: Ring | null): Aoi {
   return { id, name, ring, cells, mask, nCells: cells.size };
 }
 
+function makeAoiFromCells(cells: string[], name: string): Aoi {
+  const mask = new Uint8Array(ds.meta.cells.length);
+  for (const c of cells) { const i = ds.cellIndex.get(c); if (i !== undefined) mask[i] = 1; }
+  const poly = cellsToMultiPolygon(cells, true) as unknown as [number, number][][][];
+  const ring = (poly[0]?.[0] ?? null) as Ring | null;
+  return { id: "custom", name, ring, cells: new Set(cells), mask, nCells: cells.length };
+}
+
 function setAoi(a: Aoi, fit = true) {
   aoi = a;
   s = aggregate(ds, aoi.mask);
@@ -62,7 +70,7 @@ async function renderMap() {
     if (m < m0 || m > m1) continue;
     vals[c.cell[i]] += state.naive ? (m < vf ? c.mp[i] : c.vp[i]) : (c.w0[i] + c.w1[i] + c.w2[i] + c.w3[i]) / 10;
   }
-  const max = await fmap.setValues(vals);
+  const max = await fmap.setValues(vals, aoi.ring ? aoi.mask : undefined);
   $("map-legend").innerHTML = `<div>${state.naive ? "Naive FIRMS points" : "Harmonized fire units"} · ${ymLabel(m0)} – ${ymLabel(m1)}</div>
     <div class="bar" style="background:linear-gradient(90deg,${FIRE_RAMP.join(",")})"></div>
     <div class="ticks"><span>0</span><span>${fmt(Math.sqrt(max))}</span><span>${fmt(max)} / cell</span></div>`;
@@ -70,10 +78,12 @@ async function renderMap() {
 
 function renderCalendar() {
   const c = ctx();
+  $("cal-legend").innerHTML = legendHtml(calendarScale(c, state.cmode), yearOf(ds.meta.splice_ym));
+  $("naive-banner").hidden = !state.naive;
   charts.cal.setOption(calendarOption(c, state.cmode, state.showNums), true);
   const sy = yearOf(ds.meta.splice_ym);
   $("cal-sub").textContent = state.naive ? "NAIVE: FIRMS MODIS points until 2011, VIIRS points after" : `Harmonized MODIS-equivalent fire units · ${aoi.name}`;
-  $("cal-foot").textContent = `${legendText(state.cmode, c)} Hatched = no satellite record. ◇ = years from ${sy} derived from VIIRS through the detection-physics transfer (MODIS orbits drifting). Last month runs to ${ds.endDay} ${MONTHS[ds.lastM % 12]}.`;
+  $("cal-foot").textContent = `${legendText(state.cmode, c)} Years marked ◇ (${sy}+) come from VIIRS through the detection-physics transfer, because MODIS orbits are drifting. Hover any month for the uncertainty, raw counts and source.`;
 }
 
 function renderSeason() {
@@ -106,6 +116,8 @@ function renderBrief() {
   const med = median(baseVals);
   const rank = allVals.filter((v) => v > cur).length + 1;
   const pctDiff = med > 0 ? (cur / med - 1) * 100 : NaN;
+  const pct = percentileRank(allVals, cur);
+  const [stCls, stTxt] = pct < 10 ? ["s-xlow", "Far below normal"] : pct < 33 ? ["s-low", "Below normal"] : pct <= 67 ? ["s-norm", "Near normal"] : pct <= 90 ? ["s-high", "Above normal"] : ["s-xhigh", "Far above normal"];
   // year to date
   let ytd = 0; for (let m = (curY - 2000) * 12; m < L; m++) ytd += s.meq[m]; ytd += cur;
   const ytdBase: number[] = [];
@@ -141,10 +153,12 @@ function renderBrief() {
   const driftPct = (ratio(25 * 12, L, (m) => s.mu[m], (m) => s.meq[m]) - 1) * 100;
   const dir = pctDiff > 0 ? "up" : "down";
   $("brief").innerHTML = `
-    <div class="kicker">Situation brief · ${aoi.name}</div>
+    <div class="row-top"><div class="kicker">Situation brief · ${aoi.name}</div><span class="status ${stCls}">${stTxt}</span></div>
     <div class="headline">1–${ds.endDay} ${MONTHS[mo]} ${curY}: <span class="${dir}">${fmt(cur)}</span> fire units,
       <span class="${dir}">${Number.isFinite(pctDiff) ? fmtPct(pctDiff) : "n/a"}</span> vs the ${state.b0}–${state.b1} median for the same days
       (rank ${rank} of ${allVals.length + 1} years).</div>
+    <div><div class="meter" title="Where this month-to-date sits among all past years"><i style="left:calc(${Number.isFinite(pct) ? pct.toFixed(1) : 50}% - 1.5px)"></i></div>
+      <div class="meter-lab"><span>quietest on record</span><span>typical</span><span>busiest on record</span></div></div>
     <div class="stats">
       <div class="stat"><div class="v">${fmt(ytd)}</div><div class="k">${curY} to date · median ${fmt(ytdMed)} (${fmtPct((ytd / (ytdMed || 1) - 1) * 100)})</div></div>
       <div class="stat"><div class="v">${MONTHS[cp.peak] ?? "–"}</div><div class="k">typical peak month · ${Math.round((cp.share[cp.peak] ?? 0) * 100)}% of a year's fires</div></div>
@@ -247,7 +261,25 @@ function aoiFromHash(): Aoi | null {
 async function boot() {
   ds = await loadDataset(BASE);
   $("hdr-end").textContent = new Date(ds.meta.data_end + "T00:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
-  fmap = new FireMap($("map"), ds.meta.cells);
+  const endLabel = $("hdr-end").textContent!;
+  $("chip-end").textContent = endLabel; $("kpi-end").textContent = endLabel;
+  fmap = new FireMap($("map"), ds.meta.cells, $("map-tip"));
+  fmap.tipText = (i, v) => {
+    const [la, lo] = cellToLatLng(ds.meta.cells[i]);
+    const [m0, m1] = periodMonths();
+    return `<b>${fmt(v, v < 10 ? 1 : 0)}</b> ${state.naive ? "FIRMS points" : "fire units"}<br/>${ymLabel(m0)} – ${ymLabel(m1)}<br/><span style="color:#9aa0b0">${la.toFixed(2)}°, ${lo.toFixed(2)}° · ≈253 km² · click to analyse</span>`;
+  };
+  fmap.onCellClick = (cell) => {
+    const [la, lo] = cellToLatLng(cell);
+    $<HTMLSelectElement>("preset").value = "__custom";
+    setAoi(makeAoiFromCells(gridDisk(cell, 1), `Area around ${la.toFixed(2)}°, ${lo.toFixed(2)}°`), false);
+  };
+  const share = $("share");
+  share.onclick = async () => {
+    try { await navigator.clipboard.writeText(location.href); share.textContent = "✓ Link copied"; share.classList.add("ok"); }
+    catch { share.textContent = "Copy the URL bar"; }
+    setTimeout(() => { share.textContent = "⧉ Share view"; share.classList.remove("ok"); }, 1800);
+  };
   for (const id of ["cal", "std", "clim", "annual", "curve", "drift"]) charts[id] = makeChart($(id));
   state.to = ds.lastM; state.from = (yearOf(ds.lastM) - 2000) * 12;
   const toIso = (m: number) => `${2000 + Math.floor(m / 12)}-${String((m % 12) + 1).padStart(2, "0")}`;
