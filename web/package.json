@@ -16,5 +16,10 @@
   "devDependencies": {
     "typescript": "5.6.3",
     "vite": "5.4.11"
-  }
+  },
+  "description": "Thermal Twins web app: harmonized MODIS x VIIRS burning activity calendar",
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
 }

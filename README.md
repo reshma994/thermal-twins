@@ -4,6 +4,12 @@
 
 *NASA Space Apps Challenge 2026: Harmonization of MODIS and VIIRS Hot Spots.*
 
+![Data: NASA FIRMS](https://img.shields.io/badge/data-NASA%20FIRMS-0b3d91) ![Python 3.11](https://img.shields.io/badge/python-3.11-3776ab) ![TypeScript](https://img.shields.io/badge/web-TypeScript%20%2B%20Vite-3178c6) ![License: MIT](https://img.shields.io/badge/license-MIT-green)
+
+**Live app:** *(add your Vercel URL here)* · **Demo deck:** [docs/Thermal_Twins_demo.pdf](docs/Thermal_Twins_demo.pdf)
+
+![Thermal Twins web app: Punjab & Haryana](docs/shots/app_top.png)
+
 ---
 
 ## The problem
@@ -77,22 +83,46 @@ For each H3 r5 cell (≈ 252 km²), month and day/night:
 - This is consistent with reports that crop-residue burning has moved later in the day (ISRO SAC 2025).
 - Burning has not vanished. Polar-orbit counts, raw or harmonized, increasingly understate it, and the app flags this automatically.
 
-## Run it
+## Repository layout
+
+```
+pipeline/            Python data pipeline (one module per stage; python -m pipeline.run runs all)
+  bulk.py            FIRMS country yearly CSVs (no key, no quota)
+  fetch.py           FIRMS Area API top-up (current year, NOAA-21), resumable and quota-aware
+  clean.py · grid.py normalize, H3 cells per overpass, static-source mask, country clip
+  dpt.py             Detection-Physics Transfer: fit + held-out validation
+  harmonize.py       MODIS-equivalent series, orbit-drift diagnostic, data-driven splice
+  export.py          compact static bundle for the web app (4.7 MB gz)
+  hotspots.py        raw-hotspot packs for CSV download
+  figures.py         slide figures
+web/                 static web app (Vite + TypeScript, MapLibre, ECharts, h3-js)
+docs/                demo deck, figures, screenshots
+data/processed/      model parameters, drift table, national series (small, versioned)
+```
+
+## Run the app locally
+
+```bash
+cd web
+npm ci
+npm run dev        # http://localhost:5173
+```
+
+## Deploy (Vercel)
+
+Import this repository in Vercel and keep the defaults; `vercel.json` already sets the install, build and output paths.
+- **Branch:** the app lives on `Nitant`. Either deploy that branch as a preview, or set Production Branch to `Nitant` under Project Settings → Git.
+- **Raw-hotspot packs** (~120 MB) are not bundled into the deployment. The app streams them from this public repository; set `VITE_HOTSPOT_BASE` to serve them from somewhere else.
+
+## Rebuild the data
 
 ```bash
 python -m venv .venv && .venv/Scripts/pip install -r requirements.txt
-cp .env.example .env                      # FIRMS MAP_KEY (only for 2026 / NOAA-21 top-up)
-.venv/Scripts/python -m pipeline.bulk      --aoi india   # country yearly CSVs, no key needed
-.venv/Scripts/python -m pipeline.fetch run --aoi india
-.venv/Scripts/python -m pipeline.clean     --aoi india
-.venv/Scripts/python -m pipeline.grid      --aoi india
-.venv/Scripts/python -m pipeline.dpt       --aoi india
-.venv/Scripts/python -m pipeline.harmonize --aoi india
-.venv/Scripts/python -m pipeline.export    --aoi india
-.venv/Scripts/python -m pipeline.hotspots  --aoi india
-.venv/Scripts/python -m pipeline.figures   --aoi india
-cd web && npm install && npm run dev
+cp .env.example .env                       # free FIRMS MAP_KEY (only needed for the current-year top-up)
+.venv/Scripts/python -m pipeline.run --aoi india
 ```
+
+Stages can be run on their own (`python -m pipeline.<stage> --aoi india`) or resumed with `--from <stage>`.
 
 ## Data and references
 

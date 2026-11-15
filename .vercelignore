@@ -1,0 +1,6 @@
+# Only the web app is deployed; anchored paths so web/public/data is kept.
+/data/
+/docs/
+/pipeline/
+/.venv/
+/web/public/data/india/hotspots/

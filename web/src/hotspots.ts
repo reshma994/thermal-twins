@@ -9,7 +9,8 @@ const EPOCH = Date.UTC(2000, 0, 1);
 let index: HotIndex | null = null;
 let hotBase = "";
 // Raw-hotspot packs (~120 MB) are served from the public repo when the host doesn't carry them.
-const REPO_PACKS = "https://raw.githubusercontent.com/reshma994/thermal-twins/Nitant/web/public/data/india/hotspots";
+const REPO_PACKS: string =
+  import.meta.env.VITE_HOTSPOT_BASE ?? "https://raw.githubusercontent.com/reshma994/thermal-twins/Nitant/web/public/data/india/hotspots";
 
 async function loadIndex(base: string): Promise<HotIndex> {
   try {
