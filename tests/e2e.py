@@ -13,6 +13,8 @@ import sys
 
 from playwright.sync_api import sync_playwright
 
+from _edge import launch_edge
+
 results: list[tuple[str, bool, str]] = []
 
 
@@ -27,8 +29,9 @@ def wait_ready(page) -> None:
 
 
 def run(url: str) -> int:
+    sys.stdout.reconfigure(encoding="utf-8")
     with sync_playwright() as pw:
-        browser = pw.chromium.launch(channel="msedge", headless=True)
+        browser, proc = launch_edge(pw)
         ctx = browser.new_context(viewport={"width": 1440, "height": 900}, accept_downloads=True)
         page = ctx.new_page()
         errors: list[str] = []
@@ -39,7 +42,7 @@ def run(url: str) -> int:
         page.goto(f"{url}/#aoi=punjab_haryana")
         wait_ready(page)
         brief = page.inner_text("#brief")
-        check("India loads and brief renders", "fire units" in brief and "Punjab" in brief, brief.splitlines()[1][:80])
+        check("India loads and brief renders", "fire units" in brief and "punjab" in brief.lower(), next(l for l in brief.splitlines() if "fire units" in l)[:80])
         check("KPI detections from data", page.inner_text("#kpi-dets").strip().endswith("M"), page.inner_text("#kpi-dets"))
         check("Status badge present", page.locator("#brief .status").count() == 1, page.inner_text("#brief .status"))
         check("Calendar legend rendered", page.locator("#cal-legend .sw").count() == 7)
@@ -105,7 +108,7 @@ def run(url: str) -> int:
         page.reload()
         wait_ready(page)
         check("Argentina loads", "Argentina" in page.inner_text("#hdr-region") and "fire units" in page.inner_text("#brief"),
-              page.inner_text("#brief").splitlines()[1][:80])
+              next(l for l in page.inner_text("#brief").splitlines() if "fire units" in l)[:80])
         check("Argentina presets", page.locator("#preset option").count() >= 6)
 
         # 8. Phone width: no horizontal overflow
@@ -118,7 +121,11 @@ def run(url: str) -> int:
 
         real_errors = [e for e in errors if "favicon" not in e and "ERR_CONNECTION_REFUSED" not in e]
         check("No browser console errors", not real_errors, "; ".join(real_errors)[:200])
-        browser.close()
+        try:
+            browser.close()
+        except Exception:
+            pass
+        proc.terminate()
     fails = sum(1 for _, ok, _ in results if not ok)
     print(f"\n{len(results) - fails}/{len(results)} checks passed")
     return fails

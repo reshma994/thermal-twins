@@ -226,3 +226,5 @@ data/*.log
 .claude/
 data/processed/**/*.parquet
 web/dist/
+docs/demo/
+__pycache__/
