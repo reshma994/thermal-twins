@@ -1,0 +1,258 @@
+{
+ "splice_ym": 24252,
+ "splice_year": 2021,
+ "envelope": 0.10400000000000009,
+ "n20_scale": {
+  "D": 0.9692075898111964,
+  "N": 0.9459009377224885
+ },
+ "snpp_last_ym": 24321,
+ "aqua_first_ym": 24030,
+ "viirs_first_ym": 24144,
+ "drift": {
+  "india": [
+   {
+    "year": 2012,
+    "aqua_ratio": 1.158,
+    "terra_ratio": 1.163,
+    "modis_ratio": 1.159,
+    "terra_lst": 10.779999732971191,
+    "aqua_lst": 13.329999923706055
+   },
+   {
+    "year": 2013,
+    "aqua_ratio": 1.02,
+    "terra_ratio": 1.08,
+    "modis_ratio": 1.036,
+    "terra_lst": 10.789999961853027,
+    "aqua_lst": 13.329999923706055
+   },
+   {
+    "year": 2014,
+    "aqua_ratio": 0.953,
+    "terra_ratio": 1.062,
+    "modis_ratio": 0.983,
+    "terra_lst": 10.800000190734863,
+    "aqua_lst": 13.329999923706055
+   },
+   {
+    "year": 2015,
+    "aqua_ratio": 0.997,
+    "terra_ratio": 1.09,
+    "modis_ratio": 1.022,
+    "terra_lst": 10.789999961853027,
+    "aqua_lst": 13.329999923706055
+   },
+   {
+    "year": 2016,
+    "aqua_ratio": 1.007,
+    "terra_ratio": 0.938,
+    "modis_ratio": 0.987,
+    "terra_lst": 10.789999961853027,
+    "aqua_lst": 13.329999923706055
+   },
+   {
+    "year": 2017,
+    "aqua_ratio": 1.095,
+    "terra_ratio": 1.026,
+    "modis_ratio": 1.074,
+    "terra_lst": 10.779999732971191,
+    "aqua_lst": 13.329999923706055
+   },
+   {
+    "year": 2018,
+    "aqua_ratio": 1.108,
+    "terra_ratio": 1.095,
+    "modis_ratio": 1.104,
+    "terra_lst": 10.789999961853027,
+    "aqua_lst": 13.34000015258789
+   },
+   {
+    "year": 2019,
+    "aqua_ratio": 0.987,
+    "terra_ratio": 1.101,
+    "modis_ratio": 1.022,
+    "terra_lst": 10.789999961853027,
+    "aqua_lst": 13.319999694824219
+   },
+   {
+    "year": 2020,
+    "aqua_ratio": 1.035,
+    "terra_ratio": 1.111,
+    "modis_ratio": 1.056,
+    "terra_lst": 10.779999732971191,
+    "aqua_lst": 13.319999694824219
+   },
+   {
+    "year": 2021,
+    "aqua_ratio": 1.112,
+    "terra_ratio": 1.09,
+    "modis_ratio": 1.105,
+    "terra_lst": 10.75,
+    "aqua_lst": 13.350000381469727
+   },
+   {
+    "year": 2022,
+    "aqua_ratio": 1.014,
+    "terra_ratio": 1.12,
+    "modis_ratio": 1.047,
+    "terra_lst": 10.609999656677246,
+    "aqua_lst": 13.380000114440918
+   },
+   {
+    "year": 2023,
+    "aqua_ratio": 1.115,
+    "terra_ratio": 1.129,
+    "modis_ratio": 1.119,
+    "terra_lst": 10.369999885559082,
+    "aqua_lst": 13.569999694824219
+   },
+   {
+    "year": 2024,
+    "aqua_ratio": 1.079,
+    "terra_ratio": 1.069,
+    "modis_ratio": 1.076,
+    "terra_lst": 10.09000015258789,
+    "aqua_lst": 13.899999618530273
+   },
+   {
+    "year": 2025,
+    "aqua_ratio": 1.28,
+    "terra_ratio": 1.1,
+    "modis_ratio": 1.22,
+    "terra_lst": 9.680000305175781,
+    "aqua_lst": 14.430000305175781
+   },
+   {
+    "year": 2026,
+    "aqua_ratio": 1.231,
+    "terra_ratio": 1.157,
+    "modis_ratio": 1.205,
+    "terra_lst": 9.180000305175781,
+    "aqua_lst": 15.100000381469727
+   }
+  ],
+  "punjab_haryana": [
+   {
+    "year": 2012,
+    "aqua_ratio": 1.082,
+    "terra_ratio": 1.279,
+    "modis_ratio": 1.122,
+    "terra_lst": 10.779999732971191,
+    "aqua_lst": 13.329999923706055
+   },
+   {
+    "year": 2013,
+    "aqua_ratio": 1.028,
+    "terra_ratio": 1.229,
+    "modis_ratio": 1.067,
+    "terra_lst": 10.789999961853027,
+    "aqua_lst": 13.329999923706055
+   },
+   {
+    "year": 2014,
+    "aqua_ratio": 0.963,
+    "terra_ratio": 0.99,
+    "modis_ratio": 0.968,
+    "terra_lst": 10.800000190734863,
+    "aqua_lst": 13.329999923706055
+   },
+   {
+    "year": 2015,
+    "aqua_ratio": 0.991,
+    "terra_ratio": 0.922,
+    "modis_ratio": 0.978,
+    "terra_lst": 10.789999961853027,
+    "aqua_lst": 13.329999923706055
+   },
+   {
+    "year": 2016,
+    "aqua_ratio": 1.024,
+    "terra_ratio": 0.92,
+    "modis_ratio": 1.004,
+    "terra_lst": 10.789999961853027,
+    "aqua_lst": 13.329999923706055
+   },
+   {
+    "year": 2017,
+    "aqua_ratio": 1.089,
+    "terra_ratio": 0.79,
+    "modis_ratio": 1.03,
+    "terra_lst": 10.779999732971191,
+    "aqua_lst": 13.329999923706055
+   },
+   {
+    "year": 2018,
+    "aqua_ratio": 1.094,
+    "terra_ratio": 1.093,
+    "modis_ratio": 1.094,
+    "terra_lst": 10.789999961853027,
+    "aqua_lst": 13.34000015258789
+   },
+   {
+    "year": 2019,
+    "aqua_ratio": 0.994,
+    "terra_ratio": 1.059,
+    "modis_ratio": 1.008,
+    "terra_lst": 10.789999961853027,
+    "aqua_lst": 13.319999694824219
+   },
+   {
+    "year": 2020,
+    "aqua_ratio": 1.065,
+    "terra_ratio": 0.688,
+    "modis_ratio": 0.994,
+    "terra_lst": 10.779999732971191,
+    "aqua_lst": 13.319999694824219
+   },
+   {
+    "year": 2021,
+    "aqua_ratio": 1.034,
+    "terra_ratio": 0.855,
+    "modis_ratio": 1.0,
+    "terra_lst": 10.75,
+    "aqua_lst": 13.350000381469727
+   },
+   {
+    "year": 2022,
+    "aqua_ratio": 1.094,
+    "terra_ratio": 0.883,
+    "modis_ratio": 1.052,
+    "terra_lst": 10.609999656677246,
+    "aqua_lst": 13.380000114440918
+   },
+   {
+    "year": 2023,
+    "aqua_ratio": 1.19,
+    "terra_ratio": 0.69,
+    "modis_ratio": 1.092,
+    "terra_lst": 10.369999885559082,
+    "aqua_lst": 13.569999694824219
+   },
+   {
+    "year": 2024,
+    "aqua_ratio": 1.072,
+    "terra_ratio": 1.077,
+    "modis_ratio": 1.073,
+    "terra_lst": 10.09000015258789,
+    "aqua_lst": 13.899999618530273
+   },
+   {
+    "year": 2025,
+    "aqua_ratio": 1.219,
+    "terra_ratio": 1.374,
+    "modis_ratio": 1.255,
+    "terra_lst": 9.680000305175781,
+    "aqua_lst": 14.430000305175781
+   },
+   {
+    "year": 2026,
+    "aqua_ratio": 1.963,
+    "terra_ratio": 0.698,
+    "modis_ratio": 1.664,
+    "terra_lst": 9.180000305175781,
+    "aqua_lst": 15.100000381469727
+   }
+  ]
+ }
+}

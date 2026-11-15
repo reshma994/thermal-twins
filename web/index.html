@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Thermal Twins · Burning Activity Calendar</title>
+    <meta name="description" content="MODIS and VIIRS active-fire hotspots harmonized into one consistent burning activity calendar for India, 2000 to today." />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M8 4l7 12-7 12-7-12z' fill='%23ff8a3d'/%3E%3Cpath d='M24 4l7 12-7 12-7-12z' fill='%23ffd166'/%3E%3C/svg%3E" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="brand">
+        <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><path d="M8 4l7 12-7 12-7-12z" fill="#ff8a3d"/><path d="M24 4l7 12-7 12-7-12z" fill="#ffd166"/></svg>
+        <div>
+          <h1>Thermal Twins</h1>
+          <p>One consistent fire record from two generations of satellites · MODIS × VIIRS harmonized · <span id="hdr-region">India</span> 2000 – <span id="hdr-end">today</span></p>
+        </div>
+      </div>
+      <div class="mode" role="group" aria-label="Which record to show">
+        <button id="mode-harm" class="seg on" aria-pressed="true" title="Sensor-aware harmonized MODIS-equivalent record">Harmonized</button>
+        <button id="mode-naive" class="seg" aria-pressed="false" title="What you get by simply stacking FIRMS MODIS then VIIRS hotspot counts">Naive splice</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside class="panel" aria-label="Controls">
+        <section>
+          <h2>Area of interest</h2>
+          <label class="lbl" for="preset">Preset region</label>
+          <select id="preset"></select>
+          <div class="row btns">
+            <button id="draw-rect" class="btn" aria-pressed="false">▭ Draw box</button>
+            <button id="draw-poly" class="btn" aria-pressed="false">⬠ Draw polygon</button>
+          </div>
+          <p class="hint" id="draw-hint">Drag on the map to draw a box, or click points and double-click to close a polygon.</p>
+          <details>
+            <summary>Point &amp; radius</summary>
+            <div class="row">
+              <label>Lat <input id="pt-lat" type="number" step="0.01" value="30.90" /></label>
+              <label>Lon <input id="pt-lon" type="number" step="0.01" value="75.85" /></label>
+            </div>
+            <div class="row">
+              <label>Radius km <input id="pt-r" type="number" step="5" min="5" value="50" /></label>
+              <button id="pt-go" class="btn">Apply</button>
+            </div>
+          </details>
+          <p class="aoi-info" id="aoi-info"></p>
+        </section>
+
+        <section>
+          <h2>Period</h2>
+          <div class="row">
+            <label>From <input id="p-from" type="month" /></label>
+            <label>To <input id="p-to" type="month" /></label>
+          </div>
+          <p class="hint">Used for the map, downloads and the hotspot CSV.</p>
+          <h2>Baseline years</h2>
+          <div class="row">
+            <label>From <input id="b-from" type="number" min="2001" max="2025" value="2003" /></label>
+            <label>To <input id="b-to" type="number" min="2001" max="2025" value="2022" /></label>
+          </div>
+        </section>
+
+        <section>
+          <h2>Calendar colour</h2>
+          <div class="radios" role="radiogroup" aria-label="Calendar colour">
+            <label><input type="radio" name="cmode" value="count" checked /> Activity</label>
+            <label><input type="radio" name="cmode" value="anom" /> vs median</label>
+            <label><input type="radio" name="cmode" value="pct" /> Percentile</label>
+          </div>
+          <label class="chk"><input type="checkbox" id="show-nums" /> Show numbers in cells</label>
+        </section>
+
+        <section>
+          <h2>Download</h2>
+          <div class="col btns">
+            <button id="dl-cal" class="btn">Calendar CSV (with uncertainty)</button>
+            <button id="dl-hot" class="btn">Hotspots CSV (raw FIRMS points)</button>
+            <button id="dl-png" class="btn">Calendar image (PNG)</button>
+          </div>
+          <p class="hint" id="dl-status" aria-live="polite"></p>
+        </section>
+      </aside>
+
+      <section class="content">
+        <div class="maprow">
+          <div class="mapwrap">
+            <div id="map" role="img" aria-label="Map of fire activity in the selected period"></div>
+            <div class="legend" id="map-legend"></div>
+          </div>
+          <article class="brief" id="brief" aria-live="polite"></article>
+        </div>
+
+        <div class="card">
+          <div class="card-h">
+            <h3>Burning activity calendar</h3>
+            <span class="sub" id="cal-sub"></span>
+          </div>
+          <div id="cal" class="chart cal"></div>
+          <p class="foot" id="cal-foot"></p>
+        </div>
+
+        <div class="grid2">
+          <div class="card">
+            <div class="card-h"><h3>Season to date vs history</h3><span class="sub" id="std-sub"></span></div>
+            <div id="std" class="chart"></div>
+          </div>
+          <div class="card">
+            <div class="card-h"><h3>Typical year &amp; critical period</h3><span class="sub" id="clim-sub"></span></div>
+            <div id="clim" class="chart"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h"><h3>Annual activity &amp; trend</h3><span class="sub" id="ann-sub"></span></div>
+          <div id="annual" class="chart"></div>
+        </div>
+
+        <div class="card trust">
+          <div class="card-h"><h3>Why this record can be trusted</h3><span class="sub">Method &amp; validation</span></div>
+          <div class="trust-grid">
+            <div>
+              <h4>Five sensor artifacts we remove</h4>
+              <ol class="artifacts">
+                <li><b>Resolution.</b> VIIRS 375 m pixels split one fire into many points → counted as unique H3 cells per overpass.</li>
+                <li><b>Sensitivity.</b> VIIRS sees fires MODIS cannot → a learned, physically-constrained MODIS detection curve (FRP-binned).</li>
+                <li><b>Constellation.</b> 1 → 5 satellites over 26 years → one fixed virtual reference (Terra + Aqua).</li>
+                <li><b>Orbit drift.</b> Aqua drifted 13:30 → 15:06, Terra 10:47 → 09:11 → splice to VIIRS-derived values from <span id="splice-y">2021</span>.</li>
+                <li><b>Non-fire heat.</b> Gas flares, kilns, industry → FIRMS static-source type + persistence mask.</li>
+              </ol>
+              <div id="timeline" class="timeline" aria-label="Satellite timeline"></div>
+            </div>
+            <div>
+              <h4>Held-out validation (2017–2020, never seen in training)</h4>
+              <div id="val-table"></div>
+              <p class="foot">Pseudo-R² = share of cell-month variability explained (H3 r5 ≈ 252 km²). WAPE = national monthly absolute error / total.</p>
+            </div>
+            <div>
+              <h4>MODIS detection curve, learned from data</h4>
+              <div id="curve" class="chart small"></div>
+            </div>
+            <div>
+              <h4>Orbit drift: MODIS vs fixed-time VIIRS</h4>
+              <div id="drift" class="chart small"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot-main">
+      <p>
+        Data: NASA FIRMS active fire products — MODIS Collection 6.1 (Terra, Aqua) and VIIRS 375 m (Suomi NPP, NOAA-20, NOAA-21), standard processing plus near real-time.
+        Basemap imagery © Esri, Maxar, Earthstar Geographics. Fire units are unique H3 cells per satellite overpass; harmonized values are MODIS-equivalent units.
+        An AI coding assistant was used to speed up parts of the code; the team reviewed and is responsible for all content.
+      </p>
+    </footer>
+    <div id="loading" class="loading" role="status"><div class="spinner"></div><p>Loading 26 years of satellite fire records…</p></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

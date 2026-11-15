@@ -218,3 +218,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Thermal Twins data (large, regenerable)
+data/raw/
+data/interim/
+data/*.log
+.claude/
+data/processed/**/*.parquet
+web/dist/
